@@ -2,7 +2,7 @@ Spark DBSCAN is implementation of the [DBSCAN clustering algorithm](http://en.wi
 
 ![Clusters identified by the DBSCAN algorithm](https://github.com/alitouka/spark_dbscan/raw/master/wiki/img/finally_clustered.png)
 
-This software is **EXPERIMENTAL** , it supports only Euclidean and Manhattan distance measures ( [why?](../../wiki/How-It-Works#why-not-all-distance-measures-are-supported) ) and it is not well optimized yet. I tested it only on small datasets (millions of points) in 2-dimensional space.
+This software is **EXPERIMENTAL** , it supports only Euclidean and Manhattan distance measures ( [why?](../../wiki/How-It-Works#why-not-all-distance-measures-are-supported) ) and it is not well optimized yet. I tested it only on small datasets (millions of records).
 
 You can use Spark DBSCAN as a standalone application which you can submit to a Spark cluster ( [Learn how](../../wiki/Using-Spark-DBSCAN-as-a-standalone-application) ). Alternatively, you can include it into your own app - its API is documented and easy to use ( [Learn how](../../wiki/Including-Spark-DBSCAN-in-your-application) ).
 
