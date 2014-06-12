@@ -15,3 +15,9 @@ Learn more about:
 
 ## Performance
 ![Performance chart](https://github.com/alitouka/spark_dbscan/raw/master/wiki/img/performance_chart.png)
+
+## Contact me
+Any questions, comments, suggestions as well as criticism are welcome! You can contact me by:
+
+ * Email: spark.dbscan@gmail.com
+ * LinkedIn: https://www.linkedin.com/pub/aliaksei-litouka/59/95a/957
