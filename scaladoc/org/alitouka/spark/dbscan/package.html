@@ -1,0 +1,306 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+        <head>
+          <title>dbscan - org.alitouka.spark.dbscan</title>
+          <meta name="description" content="dbscan - org.alitouka.spark.dbscan" />
+          <meta name="keywords" content="dbscan org.alitouka.spark.dbscan" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../index.html';
+            var hash = 'org.alitouka.spark.dbscan.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img src="../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../package.html" class="extype" name="org">org</a>.<a href="../../package.html" class="extype" name="org.alitouka">alitouka</a>.<a href="../package.html" class="extype" name="org.alitouka.spark">spark</a></p>
+        <h1>dbscan</h1>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">dbscan</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Contains implementation of distributed DBSCAN algorithm as well as tools for exploratory analysis.</p></div><div class="toggleContainer block">
+          <span class="toggle">Linear Supertypes</span>
+          <div class="superTypes hiddenContent"><span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
+        </div></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        <div id="order">
+              <span class="filtertype">Ordering</span>
+              <ol>
+                
+                <li class="alpha in"><span>Alphabetic</span></li>
+                <li class="inherit out"><span>By inheritance</span></li>
+              </ol>
+            </div>
+        <div id="ancestors">
+                <span class="filtertype">Inherited<br />
+                </span>
+                <ol id="linearization">
+                  <li class="in" name="org.alitouka.spark.dbscan"><span>dbscan</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                </ol>
+              </div><div id="ancestors">
+            <span class="filtertype"></span>
+            <ol>
+              <li class="hideall out"><span>Hide All</span></li>
+              <li class="showall in"><span>Show all</span></li>
+            </ol>
+            <a href="http://docs.scala-lang.org/overviews/scaladoc/usage.html#members" target="_blank">Learn more about member selection</a>
+          </div>
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="org.alitouka.spark.dbscan.ClusterId" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ClusterId=Long"></a>
+      <a id="ClusterId:ClusterId"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ClusterId</span><span class="result"> = <span class="extype" name="scala.Long">Long</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Cluster ID</p>
+    </li><li name="org.alitouka.spark.dbscan.Dbscan" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="DbscanextendsSerializablewithLogging"></a>
+      <a id="Dbscan:Dbscan"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Dbscan.html"><span class="name">Dbscan</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span> with <span class="extype" name="org.apache.spark.Logging">Logging</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Base class for implementations of the DBSCAN algorithm
+</p>
+    </li><li name="org.alitouka.spark.dbscan.DbscanModel" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DbscanModelextendsSerializable"></a>
+      <a id="DbscanModel:DbscanModel"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DbscanModel.html"><span class="name">DbscanModel</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Represents results calculated by DBSCAN algorithm.</p>
+    </li><li name="org.alitouka.spark.dbscan.DbscanSettings" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DbscanSettingsextendsSerializable"></a>
+      <a id="DbscanSettings:DbscanSettings"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DbscanSettings.html"><span class="name">DbscanSettings</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Represents parameters of the DBSCAN algorithm</p>
+    </li><li name="org.alitouka.spark.dbscan.DistributedDbscan" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DistributedDbscanextendsDbscanwithDistanceCalculationwithLogging"></a>
+      <a id="DistributedDbscan:DistributedDbscan"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DistributedDbscan.html"><span class="name">DistributedDbscan</span></a><span class="result"> extends <a href="Dbscan.html" class="extype" name="org.alitouka.spark.dbscan.Dbscan">Dbscan</a> with <span class="extype" name="org.alitouka.spark.dbscan.spatial.DistanceCalculation">DistanceCalculation</span> with <span class="extype" name="org.apache.spark.Logging">Logging</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Implementation of the DBSCAN algorithm which is capable of parallel processing of the input data.</p>
+    </li><li name="org.alitouka.spark.dbscan.PointCoordinates" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="PointCoordinates=collection.mutable.WrappedArray.ofDouble"></a>
+      <a id="PointCoordinates:PointCoordinates"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">PointCoordinates</span><span class="result"> = <span class="extype" name="scala.collection.mutable.WrappedArray.ofDouble">ofDouble</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Represents one record in a dataset</p>
+    </li><li name="org.alitouka.spark.dbscan.RawDataSet" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="RawDataSet=org.apache.spark.rdd.RDD[org.alitouka.spark.dbscan.spatial.Point]"></a>
+      <a id="RawDataSet:RawDataSet"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">RawDataSet</span><span class="result"> = <span class="extype" name="org.apache.spark.rdd.RDD">RDD</span>[<a href="spatial/Point.html" class="extype" name="org.alitouka.spark.dbscan.spatial.Point">Point</a>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Represents a dataset which needs to be clustered</p>
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="org.alitouka.spark.dbscan.Dbscan" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Dbscan"></a>
+      <a id="Dbscan:Dbscan"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Dbscan$.html"><span class="name">Dbscan</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Serves as a factory for objects which implement the DBSCAN algorithm
+and provides a convenience method for starting the algorithm</p>
+    </li><li name="org.alitouka.spark.dbscan.DbscanDriver" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DbscanDriver"></a>
+      <a id="DbscanDriver:DbscanDriver"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="DbscanDriver$.html"><span class="name">DbscanDriver</span></a>
+      </span>
+      </h4>
+      <p class="comment cmt">A driver program which runs DBSCAN clustering algorithm</p>
+    </li><li name="org.alitouka.spark.dbscan.DbscanModel" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DbscanModel"></a>
+      <a id="DbscanModel:DbscanModel"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="DbscanModel$.html"><span class="name">DbscanModel</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Contains constants which designate cluster ID</p>
+    </li><li name="org.alitouka.spark.dbscan.DbscanSettings" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DbscanSettings"></a>
+      <a id="DbscanSettings:DbscanSettings"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="DbscanSettings$.html"><span class="name">DbscanSettings</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Provides default values for parameters of the DBSCAN algorithm</p>
+    </li><li name="org.alitouka.spark.dbscan.exploratoryAnalysis" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="exploratoryAnalysis"></a>
+      <a id="exploratoryAnalysis:exploratoryAnalysis"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="exploratoryAnalysis/package.html"><span class="name">exploratoryAnalysis</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="org.alitouka.spark.dbscan.spatial" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="spatial"></a>
+      <a id="spatial:spatial"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="spatial/package.html"><span class="name">spatial</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="org.alitouka.spark.dbscan.util" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="util"></a>
+      <a id="util:util"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="util/package.html"><span class="name">util</span></a>
+      </span>
+      </h4>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+      <script defer="defer" type="text/javascript" id="jquery-js" src="../../../../lib/jquery.js"></script><script defer="defer" type="text/javascript" id="jquery-ui-js" src="../../../../lib/jquery-ui.js"></script><script defer="defer" type="text/javascript" id="tools-tooltip-js" src="../../../../lib/tools.tooltip.js"></script><script defer="defer" type="text/javascript" id="template-js" src="../../../../lib/template.js"></script>
+    </body>
+      </html>
