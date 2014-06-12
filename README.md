@@ -14,4 +14,4 @@ Learn more about:
 * [How to include it in your application](../../wiki/Including-Spark-DBSCAN-in-your-application)
 
 ## Performance
-TODO: insert chart
+![Performance chart](https://github.com/alitouka/spark_dbscan/raw/master/wiki/img/performance_chart.png)
