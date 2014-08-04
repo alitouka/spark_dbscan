@@ -149,7 +149,7 @@ private [dbscan] class DistanceAnalyzer (
   def findClosePointsInDifferentBoxes (data: RDD[Point], boxesWithAdjacentBoxes: Iterable[Box], eps: Double,
                                        returnTwoTuplesForEachPairOfPoints:Boolean): RDD[(PointSortKey, PointSortKey)] = {
 
-    val pointsInAdjacentBoxes: RDD[(PairOfAdjacentBoxIds, Point)] = PointsInAdjacentBoxesRDD (data, boxesWithAdjacentBoxes)
+    val pointsInAdjacentBoxes: RDD[(BoxId, Point)] = PointsInAdjacentBoxesRDD (data, boxesWithAdjacentBoxes)
 
     pointsInAdjacentBoxes.mapPartitions {
       it => {
