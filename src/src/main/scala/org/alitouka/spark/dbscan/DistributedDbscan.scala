@@ -2,13 +2,14 @@ package org.alitouka.spark.dbscan
 
 import org.alitouka.spark.dbscan.spatial._
 import org.apache.commons.math3.ml.distance.DistanceMeasure
-import scala.collection.mutable.HashSet
+import scala.collection.mutable.{ListBuffer, HashSet}
 import org.apache.spark.rdd.RDD
-import org.alitouka.spark.dbscan.spatial.rdd.{PointsPartitionedByBoxesRDD, PartitioningSettings}
+import org.alitouka.spark.dbscan.spatial.rdd.{PointsInAdjacentBoxesRDD, PointsPartitionedByBoxesRDD, PartitioningSettings}
 import scala.Some
 import org.alitouka.spark.dbscan.util.commandLine.CommonArgs
 import org.alitouka.spark.dbscan.util.debug.DebugHelper
 import org.apache.spark.Logging
+import scala.collection.immutable.HashMap
 
 /** Implementation of the DBSCAN algorithm which is capable of parallel processing of the input data.
   *
@@ -225,9 +226,9 @@ class DistributedDbscan (
     }
 
     // I hope there will not be too many points and they will fit into memory
-    val localData = pointsCloseToBoxBounds.collect().sortBy ( _.distanceFromOrigin)
+    //val localData = pointsCloseToBoxBounds.collect().sortBy ( _.distanceFromOrigin)
 
-    val (mappings, borderPoints) = generateMappings (localData)
+    val (mappings, borderPoints) = generateMappings (pointsCloseToBoxBounds, boxes)
 
     val broadcastMappings = partiallyClusteredData.sparkContext.broadcast(mappings)
     val broadcastBorderPoints = partiallyClusteredData.sparkContext.broadcast(borderPoints)
@@ -248,6 +249,119 @@ class DistributedDbscan (
         it.map ( x => reassignClusterId(x._2, m, bp) )
       }
     }
+  }
+
+  private def generateMappings (pointsCloseToBoxBounds: RDD[Point], boxes: Iterable[Box])
+    :(HashSet[(HashSet[ClusterId], ClusterId)], Map [PointId, ClusterId])  = {
+
+
+    val pointsInAdjacentBoxes = PointsInAdjacentBoxesRDD (pointsCloseToBoxBounds, boxes)
+
+    val pairwiseMappings: RDD[(ClusterId, ClusterId)] = pointsInAdjacentBoxes.mapPartitions {
+      it => {
+        val pointsInPartition = it.map(_._2).toArray
+        val pairs = HashSet[(ClusterId, ClusterId)] ()
+
+        // TODO: optimize! Use PartitionIndex instead of comparing each point to each other
+        // It will be necessary to generate a bounding box which represents 2 adjacent boxes
+        // and create a partition index based on this box
+        for (i <- 0 until pointsInPartition.length;
+             j <- i+1 until pointsInPartition.length;
+             pi = pointsInPartition(i);
+             pj = pointsInPartition(j);
+             if pi.boxId != pj.boxId && pi.clusterId != pj.clusterId && calculateDistance(pi, pj) <= settings.epsilon) {
+
+
+          val enoughCorePoints = if (settings.treatBorderPointsAsNoise) {
+            isCorePoint(pi, settings) && isCorePoint (pj, settings)
+          }
+          else {
+            isCorePoint (pi, settings) || isCorePoint (pj, settings)
+          }
+
+          if (enoughCorePoints) {
+
+            val (c1, c2) = addBorderPointToCluster(pi, pj, settings)
+
+
+            if (c1 != c2) {
+              if (pi.clusterId < pj.clusterId) {
+                pairs += ((pi.clusterId, pj.clusterId))
+              }
+              else {
+                pairs += ((pj.clusterId, pi.clusterId))
+              }
+            }
+          }
+        }
+
+        pairs.iterator
+      }
+    }
+
+    val borderPointsToBeAssignedToClusters = if (!settings.treatBorderPointsAsNoise) {
+      pointsInAdjacentBoxes.mapPartitions {
+        it => {
+          val pointsInPartition = it.map(_._2).toArray
+          val bp = scala.collection.mutable.Map[PointId, ClusterId]()
+
+          // TODO: optimize! Use PartitionIndex instead of comparing each point to each other
+          // It will be necessary to generate a bounding box which represents 2 adjacent boxes
+          // and create a partition index based on this box
+          for (i <- 0 until pointsInPartition.length;
+               j <- i + 1 until pointsInPartition.length;
+               pi = pointsInPartition(i);
+               pj = pointsInPartition(j);
+               if pi.boxId != pj.boxId && pi.clusterId != pj.clusterId && calculateDistance(pi, pj) <= settings.epsilon) {
+
+            val enoughCorePoints = isCorePoint(pi, settings) || isCorePoint(pj, settings)
+
+            if (enoughCorePoints) {
+              addBorderPointToCluster(pi, pj, settings, bp)
+            }
+          }
+
+          bp.iterator
+        }
+      }.collect().toMap
+    }
+    else {
+      HashMap[PointId, ClusterId] ()
+    }
+
+    val mappings = HashSet[HashSet[ClusterId]] ()
+    val processedPairs = HashSet[(ClusterId, ClusterId)] ()
+
+    val temp = pairwiseMappings.collect ()
+
+    temp.foreach {
+      x => {
+        processPairOfClosePoints(null, null, x._1, x._2, processedPairs, mappings)
+      }
+    }
+
+    val finalMappings = mappings.filter(_.size > 0).map ( x => (x, x.head) )
+
+    (finalMappings, borderPointsToBeAssignedToClusters)
+  }
+
+  private def addBorderPointToCluster (pt1: Point,
+                                       pt2: Point,
+                                       settings: DbscanSettings): (ClusterId, ClusterId) = {
+
+    var newClusterId1 = pt1.clusterId
+    var newClusterId2 = pt2.clusterId
+
+    if (!settings.treatBorderPointsAsNoise) {
+      if (!isCorePoint(pt1, settings) && pt1.clusterId == DbscanModel.UndefinedCluster) {
+        newClusterId1 = pt2.clusterId
+      }
+      else if (!isCorePoint (pt2, settings) && pt2.clusterId == DbscanModel.UndefinedCluster) {
+        newClusterId2 = pt1.clusterId
+      }
+    }
+
+    (newClusterId1, newClusterId2)
   }
 
   /** Detects clusters in different partitions which should be merged together and generates mappings
@@ -342,15 +456,18 @@ class DistributedDbscan (
         case (x: Some[HashSet[ClusterId]], y: Some[HashSet[ClusterId]]) => {
 
           if (x != y) {
-            val m3 = x.get.union(y.get)
-            mappings -= x.get
-            mappings -= y.get
-            mappings += m3
+            mappings += x.get.union(y.get)
+
+            // why mappings -= x.get doesn't work???????
+            x.get.clear()
+            y.get.clear()
           }
         }
       }
     }
   }
+
+
 
 
   private def addBorderPointToCluster (
@@ -380,7 +497,7 @@ class DistributedDbscan (
   private [dbscan] def reassignClusterId (
     pt: Point,
     mappings: HashSet[(HashSet[ClusterId], ClusterId)],
-    borderPoints: scala.collection.mutable.Map [PointId, ClusterId]): Point = {
+    borderPoints: Map [PointId, ClusterId]): Point = {
 
     var newClusterId = pt.clusterId
 

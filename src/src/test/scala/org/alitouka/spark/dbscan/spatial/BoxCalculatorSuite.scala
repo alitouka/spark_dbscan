@@ -203,5 +203,39 @@ class BoxCalculatorSuite extends SuiteBase {
 
     moreSmallBoxes.size should be (12)
   }
+
+  test ("BoxCalculator should find adjacent boxes correctly") {
+
+    val b1 = new Box ((0.0, 1.0), (0.0, 1.0)).withId(1)
+    val b2 = new Box ((1.0, 2.0), (0.0, 1.0)).withId(2)
+    val b3 = new Box ((2.0, 3.0), (0.0, 1.0)).withId(3)
+    val b4 = new Box ((0.0, 3.0), (1.0, 2.0)).withId(4)
+    val allBoxes = b1 :: b2 :: b3 :: b4 :: Nil
+
+    BoxCalculator.assignAdjacentBoxes (allBoxes)
+
+    assert (b1.adjacentBoxes.contains(b2))
+    assert (b1.adjacentBoxes.contains(b4))
+
+    assert (b2.adjacentBoxes.contains(b1))
+    assert (b2.adjacentBoxes.contains(b3))
+    assert (b2.adjacentBoxes.contains(b4))
+
+    assert (b3.adjacentBoxes.contains(b2))
+    assert (b3.adjacentBoxes.contains(b4))
+
+    assert (b4.adjacentBoxes.contains(b1))
+    assert (b4.adjacentBoxes.contains(b2))
+    assert (b4.adjacentBoxes.contains(b3))
+
+    val distinctAdjacentBoxIds = BoxCalculator.generateDistinctPairsOfAdjacentBoxIds(allBoxes).toArray
+
+    assert (distinctAdjacentBoxIds.length == 5)
+    assert (distinctAdjacentBoxIds.contains((b1.boxId, b2.boxId)))
+    assert (distinctAdjacentBoxIds.contains((b1.boxId, b4.boxId)))
+    assert (distinctAdjacentBoxIds.contains((b2.boxId, b3.boxId)))
+    assert (distinctAdjacentBoxIds.contains((b2.boxId, b4.boxId)))
+    assert (distinctAdjacentBoxIds.contains((b3.boxId, b4.boxId)))
+  }
 }
 

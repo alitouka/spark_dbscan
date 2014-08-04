@@ -183,4 +183,23 @@ class BoxSuite extends SuiteBase {
     testBox.bounds(1).lower should be (5)
     testBox.bounds(1).upper should be (7)
   }
+
+  test ("Box should correctly identify whether another box is adjacent to it") {
+    val b1 = new Box ((0.0, 2.0), (0.0, 3.0))
+    val b2 = new Box ((2.0, 3.0), (0.0, 1.0))
+    val b3 = new Box ((2.0, 3.0), (1.0, 2.0))
+    val b4 = new Box ((2.0, 3.0), (2.0, 3.0))
+    val b5 = new Box ((2.0, 3.0), (3.0, 4.0))
+    val b6 = new Box ((2.0, 3.0), (4.0, 5.0))
+    val b7 = new Box ((0.5, 1.5), (0.5, 2.5))
+
+    assert (b1.isAdjacentToBox(b2))
+    assert (b1.isAdjacentToBox(b3))
+    assert (b1.isAdjacentToBox(b4))
+    assert (b1.isAdjacentToBox(b5))
+    assert (!b1.isAdjacentToBox(b6))
+    assert (b2.isAdjacentToBox(b3))
+    assert (!b2.isAdjacentToBox(b4))
+    assert (!b1.isAdjacentToBox(b7))
+  }
 }

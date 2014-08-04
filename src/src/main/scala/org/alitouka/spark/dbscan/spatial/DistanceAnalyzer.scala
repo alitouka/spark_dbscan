@@ -82,8 +82,12 @@ private [dbscan] class DistanceAnalyzer (
 
     val closePointsInsideBoxes = findClosePointsWithinEachBox(data, returnTwoTuplesForEachPairOfPoints)
     val pointsCloseToBoxBounds = findPointsCloseToBoxBounds (data, data.boxes, settings.epsilon)
-    val closePointsInDifferentBoxes = findClosePointsInDifferentBoxes (pointsCloseToBoxBounds, data.boundingBox,
+//    val closePointsInDifferentBoxes = findClosePointsInDifferentBoxes (pointsCloseToBoxBounds, data.boundingBox,
+//      settings.epsilon, returnTwoTuplesForEachPairOfPoints)
+    val closePointsInDifferentBoxes = findClosePointsInDifferentBoxes (pointsCloseToBoxBounds, data.boxes,
       settings.epsilon, returnTwoTuplesForEachPairOfPoints)
+
+    //logInfo (s"There are ${closePointsInDifferentBoxes.collect().length} close points in different boxes")
 
     closePointsInsideBoxes.union (closePointsInDifferentBoxes)
   }
@@ -140,6 +144,37 @@ private [dbscan] class DistanceAnalyzer (
 
       it.filter ( x => isPointCloseToAnyBound (x._2, box, eps)).map ( _._2 )
     })
+  }
+
+  def findClosePointsInDifferentBoxes (data: RDD[Point], boxesWithAdjacentBoxes: Iterable[Box], eps: Double,
+                                       returnTwoTuplesForEachPairOfPoints:Boolean): RDD[(PointSortKey, PointSortKey)] = {
+
+    val pointsInAdjacentBoxes: RDD[(PairOfAdjacentBoxIds, Point)] = PointsInAdjacentBoxesRDD (data, boxesWithAdjacentBoxes)
+
+    pointsInAdjacentBoxes.mapPartitions {
+      it => {
+        val pointsInPartition = it.map (_._2).toArray.sortBy(_.distanceFromOrigin)
+        val result = ListBuffer[(PointSortKey, PointSortKey)] ()
+
+        // TODO: optimize! Use PartitionIndex instead of comparing each point to each other
+        // It will be necessary to generate a bounding box which represents 2 adjacent boxes
+        // and create a partition index based on this box
+        for (i <- 0 until pointsInPartition.length;
+             j <- i+1 until pointsInPartition.length;
+             pi = pointsInPartition(i);
+             pj = pointsInPartition(j);
+             if pi.boxId != pj.boxId && calculateDistance(pi, pj) <= settings.epsilon) {
+
+          result += ((new PointSortKey(pi), new PointSortKey(pj)))
+
+          if (returnTwoTuplesForEachPairOfPoints) {
+            result += ((new PointSortKey(pj), new PointSortKey(pi)))
+          }
+        }
+
+        result.iterator
+      }
+    }
   }
 
   def findClosePointsInDifferentBoxes (data: RDD[Point], boundingBox: Box, eps: Double,

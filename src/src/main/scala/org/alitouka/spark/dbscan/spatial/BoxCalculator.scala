@@ -1,6 +1,6 @@
 package org.alitouka.spark.dbscan.spatial
 
-import org.alitouka.spark.dbscan.{BoxId, DbscanSettings, RawDataSet}
+import org.alitouka.spark.dbscan.{PairOfAdjacentBoxIds, BoxId, DbscanSettings, RawDataSet}
 import org.alitouka.spark.dbscan.spatial.rdd.{BoxPartitioner, PartitioningSettings}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.SparkContext._
@@ -35,8 +35,12 @@ private [dbscan] class BoxCalculator (val data: RawDataSet) {
       x => totalCounts (x.box.boxId) >= partitioningSettings.numberOfPointsInBox
     }
 
+    BoxCalculator.assignAdjacentBoxes (boxesWithEnoughPoints)
+
     (BoxPartitioner.assignPartitionIdsToBoxes(boxesWithEnoughPoints), rootBox)
   }
+
+
 
 
   private [dbscan] def getNumberOfDimensions (ds: RawDataSet): Int = {
@@ -141,5 +145,26 @@ private [dbscan] object BoxCalculator {
     val combinations = BoxCalculator.generateCombinationsOfSplits(splits.toList, dimensions-1)
 
     for (i <- 0 until combinations.size) yield new Box (combinations(i).reverse , i+1)
+  }
+
+  private [dbscan] def assignAdjacentBoxes (boxesWithEnoughPoints: Iterable[Box]) = {
+
+    val temp = boxesWithEnoughPoints.toArray
+
+    for (i <- 0 until temp.length) {
+      for (j <- i+1 until temp.length) {
+        if (temp(i).isAdjacentToBox(temp(j))) {
+          temp(i).addAdjacentBox(temp(j))
+          temp(j).addAdjacentBox(temp(i))
+        }
+      }
+    }
+  }
+
+  private [dbscan] def generateDistinctPairsOfAdjacentBoxIds (boxesWithAdjacentBoxes: Iterable[Box]): Iterable[PairOfAdjacentBoxIds] = {
+
+    for (b <- boxesWithAdjacentBoxes; ab <- b.adjacentBoxes; if b.boxId < ab.boxId)
+      yield (b.boxId, ab.boxId)
+
   }
 }

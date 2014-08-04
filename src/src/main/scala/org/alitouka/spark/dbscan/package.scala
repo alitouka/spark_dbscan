@@ -38,5 +38,5 @@ package object dbscan {
    */
   type ClusterId = Long
 
-
+  type PairOfAdjacentBoxIds = (BoxId, BoxId)
 }

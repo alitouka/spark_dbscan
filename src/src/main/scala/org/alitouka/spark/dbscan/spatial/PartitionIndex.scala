@@ -220,6 +220,10 @@ private [dbscan] object PartitionIndex extends DistanceCalculation {
 
     boxes.filter ( _ != x).foreach {
       y => {
+
+        // The code below relies on the fact that all boxes are of equal size
+        // It works a little faster than Box.isAdjacentToBox
+
         var n = 0
 
         for (i <- 0 until x.box.bounds.size) {
