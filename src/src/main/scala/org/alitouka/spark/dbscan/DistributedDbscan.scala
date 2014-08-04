@@ -259,39 +259,44 @@ class DistributedDbscan (
 
     val pairwiseMappings: RDD[(ClusterId, ClusterId)] = pointsInAdjacentBoxes.mapPartitions {
       it => {
-        val pointsInPartition = it.map(_._2).toArray
+        val pointsInPartition = it.map(_._2).toArray.sortBy(_.distanceFromOrigin)
         val pairs = HashSet[(ClusterId, ClusterId)] ()
 
         // TODO: optimize! Use PartitionIndex instead of comparing each point to each other
         // It will be necessary to generate a bounding box which represents 2 adjacent boxes
         // and create a partition index based on this box
-        for (i <- 0 until pointsInPartition.length;
-             j <- i+1 until pointsInPartition.length;
-             pi = pointsInPartition(i);
-             pj = pointsInPartition(j);
-             if pi.boxId != pj.boxId && pi.clusterId != pj.clusterId && calculateDistance(pi, pj) <= settings.epsilon) {
+        for (i <- 1 until pointsInPartition.length) {
+          var j = i-1
 
+          while (j >= 0 && pointsInPartition(i).distanceFromOrigin - pointsInPartition(j).distanceFromOrigin <= settings.epsilon) {
 
-          val enoughCorePoints = if (settings.treatBorderPointsAsNoise) {
-            isCorePoint(pi, settings) && isCorePoint (pj, settings)
-          }
-          else {
-            isCorePoint (pi, settings) || isCorePoint (pj, settings)
-          }
-
-          if (enoughCorePoints) {
-
-            val (c1, c2) = addBorderPointToCluster(pi, pj, settings)
-
-
-            if (c1 != c2) {
-              if (pi.clusterId < pj.clusterId) {
-                pairs += ((pi.clusterId, pj.clusterId))
+            val pi = pointsInPartition(i)
+            val pj = pointsInPartition(j)
+            if (pi.boxId != pj.boxId && pi.clusterId != pj.clusterId && calculateDistance(pi, pj) <= settings.epsilon) {
+              val enoughCorePoints = if (settings.treatBorderPointsAsNoise) {
+                isCorePoint(pi, settings) && isCorePoint (pj, settings)
               }
               else {
-                pairs += ((pj.clusterId, pi.clusterId))
+                isCorePoint (pi, settings) || isCorePoint (pj, settings)
+              }
+
+              if (enoughCorePoints) {
+
+                val (c1, c2) = addBorderPointToCluster(pi, pj, settings)
+
+
+                if (c1 != c2) {
+                  if (pi.clusterId < pj.clusterId) {
+                    pairs += ((pi.clusterId, pj.clusterId))
+                  }
+                  else {
+                    pairs += ((pj.clusterId, pi.clusterId))
+                  }
+                }
               }
             }
+
+            j -= 1
           }
         }
 
@@ -302,22 +307,28 @@ class DistributedDbscan (
     val borderPointsToBeAssignedToClusters = if (!settings.treatBorderPointsAsNoise) {
       pointsInAdjacentBoxes.mapPartitions {
         it => {
-          val pointsInPartition = it.map(_._2).toArray
+          val pointsInPartition = it.map(_._2).toArray.sortBy(_.distanceFromOrigin)
           val bp = scala.collection.mutable.Map[PointId, ClusterId]()
 
           // TODO: optimize! Use PartitionIndex instead of comparing each point to each other
           // It will be necessary to generate a bounding box which represents 2 adjacent boxes
           // and create a partition index based on this box
-          for (i <- 0 until pointsInPartition.length;
-               j <- i + 1 until pointsInPartition.length;
-               pi = pointsInPartition(i);
-               pj = pointsInPartition(j);
-               if pi.boxId != pj.boxId && pi.clusterId != pj.clusterId && calculateDistance(pi, pj) <= settings.epsilon) {
+          for (i <- 1 until pointsInPartition.length) {
+            var j = i-1
 
-            val enoughCorePoints = isCorePoint(pi, settings) || isCorePoint(pj, settings)
+            while (j >= 0 && pointsInPartition(i).distanceFromOrigin - pointsInPartition(j).distanceFromOrigin <= settings.epsilon) {
 
-            if (enoughCorePoints) {
-              addBorderPointToCluster(pi, pj, settings, bp)
+              val pi = pointsInPartition(i)
+              val pj = pointsInPartition(j)
+              if (pi.boxId != pj.boxId && pi.clusterId != pj.clusterId && calculateDistance(pi, pj) <= settings.epsilon) {
+                val enoughCorePoints = isCorePoint(pi, settings) || isCorePoint(pj, settings)
+
+                if (enoughCorePoints) {
+                  addBorderPointToCluster(pi, pj, settings, bp)
+                }
+              }
+
+              j -= 1
             }
           }
 

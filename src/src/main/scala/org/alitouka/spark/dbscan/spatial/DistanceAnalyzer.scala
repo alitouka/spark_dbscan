@@ -159,16 +159,23 @@ private [dbscan] class DistanceAnalyzer (
         // TODO: optimize! Use PartitionIndex instead of comparing each point to each other
         // It will be necessary to generate a bounding box which represents 2 adjacent boxes
         // and create a partition index based on this box
-        for (i <- 0 until pointsInPartition.length;
-             j <- i+1 until pointsInPartition.length;
-             pi = pointsInPartition(i);
-             pj = pointsInPartition(j);
-             if pi.boxId != pj.boxId && calculateDistance(pi, pj) <= settings.epsilon) {
+        for (i <- 1 until pointsInPartition.length) {
+          var j = i-1
 
-          result += ((new PointSortKey(pi), new PointSortKey(pj)))
+          while (j >= 0 && pointsInPartition(i).distanceFromOrigin - pointsInPartition(j).distanceFromOrigin <= eps) {
 
-          if (returnTwoTuplesForEachPairOfPoints) {
-            result += ((new PointSortKey(pj), new PointSortKey(pi)))
+            val pi = pointsInPartition(i)
+            val pj = pointsInPartition(j)
+
+            if (pi.boxId != pj.boxId && calculateDistance(pi, pj) <= settings.epsilon) {
+              result += ((new PointSortKey(pi), new PointSortKey(pj)))
+
+              if (returnTwoTuplesForEachPairOfPoints) {
+                result += ((new PointSortKey(pj), new PointSortKey(pi)))
+              }
+            }
+
+            j -= 1
           }
         }
 
