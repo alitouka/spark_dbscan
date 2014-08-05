@@ -155,54 +155,54 @@ private [dbscan] class DistanceAnalyzer (
     pointsInAdjacentBoxes.mapPartitionsWithIndex {
       (idx, it) => {
 
-        val pointsInPartition = it.map (_._2).toArray // .sortBy(_.distanceFromOrigin)
+        val pointsInPartition = it.map (_._2).toArray.sortBy(_.distanceFromOrigin)
         val result = ListBuffer[(PointSortKey, PointSortKey)] ()
 
-        val rootBoxForPartition = broadcastBoxes.value.find (_.partitionId == idx).get
-        val embracingBox = BoxCalculator.generateEmbracingBoxFromAdjacentBoxes(rootBoxForPartition)
-        val partitionIndex = new PartitionIndex (embracingBox, settings, partitioningSettings.withNumberOfSplitsWithinPartition(11))
-
-        partitionIndex.populate(pointsInPartition)
-
-
-        pointsInPartition.foreach {
-          p => {
-            val closePoints = partitionIndex.findClosePoints(p)
-
-            closePoints.filter (cp => cp.boxId < p.boxId).foreach {
-              cp => {
-                result += ((new PointSortKey(p), new PointSortKey (cp)))
-
-                if (returnTwoTuplesForEachPairOfPoints) {
-                  result += ((new PointSortKey (cp), new PointSortKey (p)))
-                }
-              }
-            }
-          }
-        }
+//        val rootBoxForPartition = broadcastBoxes.value.find (_.partitionId == idx).get
+//        val embracingBox = BoxCalculator.generateEmbracingBoxFromAdjacentBoxes(rootBoxForPartition)
+//        val partitionIndex = new PartitionIndex (embracingBox, settings, partitioningSettings.withNumberOfSplitsWithinPartition(11))
+//
+//        partitionIndex.populate(pointsInPartition)
+//
+//
+//        pointsInPartition.foreach {
+//          p => {
+//            val closePoints = partitionIndex.findClosePoints(p)
+//
+//            closePoints.filter (cp => cp.boxId < p.boxId).foreach {
+//              cp => {
+//                result += ((new PointSortKey(p), new PointSortKey (cp)))
+//
+//                if (returnTwoTuplesForEachPairOfPoints) {
+//                  result += ((new PointSortKey (cp), new PointSortKey (p)))
+//                }
+//              }
+//            }
+//          }
+//        }
 
         // TODO: optimize! Use PartitionIndex instead of comparing each point to each other
         // It will be necessary to generate a bounding box which represents 2 adjacent boxes
         // and create a partition index based on this box
-//        for (i <- 1 until pointsInPartition.length) {
-//          var j = i-1
-//
-//          while (j >= 0 && pointsInPartition(i).distanceFromOrigin - pointsInPartition(j).distanceFromOrigin <= eps) {
-//
-//            val pi = pointsInPartition(i)
-//            val pj = pointsInPartition(j)
-//
-//            if (pi.boxId < pj.boxId && calculateDistance(pi, pj) <= settings.epsilon) {
-//              result += ((new PointSortKey(pi), new PointSortKey(pj)))
-//
-//              if (returnTwoTuplesForEachPairOfPoints) {
-//                result += ((new PointSortKey(pj), new PointSortKey(pi)))
-//              }
-//            }
-//
-//            j -= 1
-//          }
-//        }
+        for (i <- 1 until pointsInPartition.length) {
+          var j = i-1
+
+          while (j >= 0 && pointsInPartition(i).distanceFromOrigin - pointsInPartition(j).distanceFromOrigin <= eps) {
+
+            val pi = pointsInPartition(i)
+            val pj = pointsInPartition(j)
+
+            if (pi.boxId < pj.boxId && calculateDistance(pi, pj) <= settings.epsilon) {
+              result += ((new PointSortKey(pi), new PointSortKey(pj)))
+
+              if (returnTwoTuplesForEachPairOfPoints) {
+                result += ((new PointSortKey(pj), new PointSortKey(pi)))
+              }
+            }
+
+            j -= 1
+          }
+        }
 
         result.iterator
       }

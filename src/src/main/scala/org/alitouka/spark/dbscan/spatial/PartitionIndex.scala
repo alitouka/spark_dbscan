@@ -66,7 +66,7 @@ private [dbscan] class PartitionIndex (val partitionBounds: Box,
 
   private [dbscan] def findPotentiallyClosePoints (pt: Point): Iterable[Point] = {
     val box1 = findBoxForPoint(pt, boxesTree)
-    val result = ListBuffer[Point] ()
+    var result = ListBuffer[Point] ()
 
     result ++= box1.points.filter ( p => p.pointId != pt.pointId && Math.abs(p.distanceFromOrigin - pt.distanceFromOrigin) <= dbscanSettings.epsilon )
 
@@ -83,7 +83,7 @@ private [dbscan] class PartitionIndex (val partitionBounds: Box,
       }
     }
 
-    result //.filter ( p => Math.abs(p.distanceFromOrigin - pt.distanceFromOrigin) <= dbscanSettings.epsilon )
+    result
   }
 
 

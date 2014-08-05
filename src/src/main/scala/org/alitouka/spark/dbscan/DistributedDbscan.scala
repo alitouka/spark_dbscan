@@ -261,83 +261,84 @@ class DistributedDbscan (
 
     val pairwiseMappings: RDD[(ClusterId, ClusterId)] = pointsInAdjacentBoxes.mapPartitionsWithIndex {
       (idx, it) => {
-        val pointsInPartition = it.map(_._2).toArray //.sortBy(_.distanceFromOrigin)
+        val pointsInPartition = it.map(_._2).toArray.sortBy(_.distanceFromOrigin)
         val pairs = HashSet[(ClusterId, ClusterId)] ()
 
-        val rootBoxForPartition = broadcastBoxes.value.find (_.partitionId == idx).get
-        val embracingBox = BoxCalculator.generateEmbracingBoxFromAdjacentBoxes(rootBoxForPartition)
-        val partitionIndex = new PartitionIndex (embracingBox, settings, partitioningSettings.withNumberOfSplitsWithinPartition(11))
-
-        partitionIndex.populate(pointsInPartition)
-
-        pointsInPartition.foreach {
-          pi => {
-            val closePoints = partitionIndex.findClosePoints(pi)
-
-            closePoints.filter ( pj => pi.boxId < pj.boxId && pi.clusterId != pj.clusterId).foreach {
-              pj => {
-
-                val enoughCorePoints = if (settings.treatBorderPointsAsNoise) {
-                  isCorePoint(pi, settings) && isCorePoint (pj, settings)
-                }
-                else {
-                  isCorePoint (pi, settings) || isCorePoint (pj, settings)
-                }
-
-                if (enoughCorePoints) {
-                  val (c1, c2) = addBorderPointToCluster(pi, pj, settings)
-
-                  if (c1 != c2) {
-                    if (pi.clusterId < pj.clusterId) {
-                      pairs += ((pi.clusterId, pj.clusterId))
-                    }
-                    else {
-                      pairs += ((pj.clusterId, pi.clusterId))
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-
-        // TODO: optimize! Use PartitionIndex instead of comparing each point to each other
-        // It will be necessary to generate a bounding box which represents 2 adjacent boxes
-        // and create a partition index based on this box
-//        for (i <- 1 until pointsInPartition.length) {
-//          var j = i-1
+//        val rootBoxForPartition = broadcastBoxes.value.find (_.partitionId == idx).get
+//        val embracingBox = BoxCalculator.generateEmbracingBoxFromAdjacentBoxes(rootBoxForPartition)
+//        val partitionIndex = new PartitionIndex (embracingBox, settings, partitioningSettings.withNumberOfSplitsWithinPartition(11))
 //
-//          while (j >= 0 && pointsInPartition(i).distanceFromOrigin - pointsInPartition(j).distanceFromOrigin <= settings.epsilon) {
+//        partitionIndex.populate(pointsInPartition)
 //
-//            val pi = pointsInPartition(i)
-//            val pj = pointsInPartition(j)
-//            if (pi.boxId < pj.boxId && pi.clusterId != pj.clusterId && calculateDistance(pi, pj) <= settings.epsilon) {
-//              val enoughCorePoints = if (settings.treatBorderPointsAsNoise) {
-//                isCorePoint(pi, settings) && isCorePoint (pj, settings)
-//              }
-//              else {
-//                isCorePoint (pi, settings) || isCorePoint (pj, settings)
-//              }
+//        pointsInPartition.foreach {
+//          pi => {
+//            val closePoints = partitionIndex.findClosePoints(pi)
 //
-//              if (enoughCorePoints) {
+//            closePoints.filter ( pj => pi.boxId < pj.boxId && pi.clusterId != pj.clusterId).foreach {
+//              pj => {
 //
-//                val (c1, c2) = addBorderPointToCluster(pi, pj, settings)
+//                val enoughCorePoints = if (settings.treatBorderPointsAsNoise) {
+//                  isCorePoint(pi, settings) && isCorePoint (pj, settings)
+//                }
+//                else {
+//                  isCorePoint (pi, settings) || isCorePoint (pj, settings)
+//                }
 //
+//                if (enoughCorePoints) {
+//                  val (c1, c2) = addBorderPointToCluster(pi, pj, settings)
 //
-//                if (c1 != c2) {
-//                  if (pi.clusterId < pj.clusterId) {
-//                    pairs += ((pi.clusterId, pj.clusterId))
-//                  }
-//                  else {
-//                    pairs += ((pj.clusterId, pi.clusterId))
+//                  if (c1 != c2) {
+//                    if (pi.clusterId < pj.clusterId) {
+//                      pairs += ((pi.clusterId, pj.clusterId))
+//                    }
+//                    else {
+//                      pairs += ((pj.clusterId, pi.clusterId))
+//                    }
 //                  }
 //                }
 //              }
 //            }
-//
-//            j -= 1
 //          }
 //        }
+
+        // TODO: optimize! Use PartitionIndex instead of comparing each point to each other
+        // It will be necessary to generate a bounding box which represents 2 adjacent boxes
+        // and create a partition index based on this box
+        for (i <- 1 until pointsInPartition.length) {
+          var j = i-1
+
+          while (j >= 0 && pointsInPartition(i).distanceFromOrigin - pointsInPartition(j).distanceFromOrigin <= settings.epsilon) {
+
+            val pi = pointsInPartition(i)
+            val pj = pointsInPartition(j)
+
+            if (pi.boxId < pj.boxId && pi.clusterId != pj.clusterId && calculateDistance(pi, pj) <= settings.epsilon) {
+              val enoughCorePoints = if (settings.treatBorderPointsAsNoise) {
+                isCorePoint(pi, settings) && isCorePoint (pj, settings)
+              }
+              else {
+                isCorePoint (pi, settings) || isCorePoint (pj, settings)
+              }
+
+              if (enoughCorePoints) {
+
+                val (c1, c2) = addBorderPointToCluster(pi, pj, settings)
+
+
+                if (c1 != c2) {
+                  if (pi.clusterId < pj.clusterId) {
+                    pairs += ((pi.clusterId, pj.clusterId))
+                  }
+                  else {
+                    pairs += ((pj.clusterId, pi.clusterId))
+                  }
+                }
+              }
+            }
+
+            j -= 1
+          }
+        }
 
         pairs.iterator
       }
@@ -346,52 +347,53 @@ class DistributedDbscan (
     val borderPointsToBeAssignedToClusters = if (!settings.treatBorderPointsAsNoise) {
       pointsInAdjacentBoxes.mapPartitionsWithIndex {
         (idx, it) => {
-          val pointsInPartition = it.map(_._2).toArray //.sortBy(_.distanceFromOrigin)
+          val pointsInPartition = it.map(_._2).toArray.sortBy(_.distanceFromOrigin)
           val bp = scala.collection.mutable.Map[PointId, ClusterId]()
 
-          val rootBoxForPartition = broadcastBoxes.value.find (_.partitionId == idx).get
-          val embracingBox = BoxCalculator.generateEmbracingBoxFromAdjacentBoxes(rootBoxForPartition)
-          val partitionIndex = new PartitionIndex (embracingBox, settings, partitioningSettings.withNumberOfSplitsWithinPartition(11))
-
-          partitionIndex.populate(pointsInPartition)
-
-          pointsInPartition.foreach {
-            pi => {
-              val closePoints = partitionIndex.findClosePoints(pi)
-
-              closePoints.filter (pj => pi.boxId < pj.boxId && pi.clusterId != pj.clusterId).foreach {
-                pj => {
-                  val enoughCorePoints = isCorePoint(pi, settings) || isCorePoint(pj, settings)
-
-                  if (enoughCorePoints) {
-                    addBorderPointToCluster(pi, pj, settings, bp)
-                  }
-                }
-              }
-            }
-          }
+//          val rootBoxForPartition = broadcastBoxes.value.find (_.partitionId == idx).get
+//          val embracingBox = BoxCalculator.generateEmbracingBoxFromAdjacentBoxes(rootBoxForPartition)
+//          val partitionIndex = new PartitionIndex (embracingBox, settings, partitioningSettings.withNumberOfSplitsWithinPartition(11))
+//
+//          partitionIndex.populate(pointsInPartition)
+//
+//          pointsInPartition.foreach {
+//            pi => {
+//              val closePoints = partitionIndex.findClosePoints(pi)
+//
+//              closePoints.filter (pj => pi.boxId < pj.boxId && pi.clusterId != pj.clusterId).foreach {
+//                pj => {
+//                  val enoughCorePoints = isCorePoint(pi, settings) || isCorePoint(pj, settings)
+//
+//                  if (enoughCorePoints) {
+//                    addBorderPointToCluster(pi, pj, settings, bp)
+//                  }
+//                }
+//              }
+//            }
+//          }
 
           // TODO: optimize! Use PartitionIndex instead of comparing each point to each other
           // It will be necessary to generate a bounding box which represents 2 adjacent boxes
           // and create a partition index based on this box
-//          for (i <- 1 until pointsInPartition.length) {
-//            var j = i-1
-//
-//            while (j >= 0 && pointsInPartition(i).distanceFromOrigin - pointsInPartition(j).distanceFromOrigin <= settings.epsilon) {
-//
-//              val pi = pointsInPartition(i)
-//              val pj = pointsInPartition(j)
-//              if (pi.boxId < pj.boxId && pi.clusterId != pj.clusterId && calculateDistance(pi, pj) <= settings.epsilon) {
-//                val enoughCorePoints = isCorePoint(pi, settings) || isCorePoint(pj, settings)
-//
-//                if (enoughCorePoints) {
-//                  addBorderPointToCluster(pi, pj, settings, bp)
-//                }
-//              }
-//
-//              j -= 1
-//            }
-//          }
+          for (i <- 1 until pointsInPartition.length) {
+            var j = i-1
+
+            while (j >= 0 && pointsInPartition(i).distanceFromOrigin - pointsInPartition(j).distanceFromOrigin <= settings.epsilon) {
+
+              val pi = pointsInPartition(i)
+              val pj = pointsInPartition(j)
+
+              if (pi.boxId < pj.boxId && pi.clusterId != pj.clusterId && calculateDistance(pi, pj) <= settings.epsilon) {
+                val enoughCorePoints = isCorePoint(pi, settings) || isCorePoint(pj, settings)
+
+                if (enoughCorePoints) {
+                  addBorderPointToCluster(pi, pj, settings, bp)
+                }
+              }
+
+              j -= 1
+            }
+          }
 
           bp.iterator
         }
