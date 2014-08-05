@@ -2,7 +2,7 @@ package org.alitouka.spark.dbscan.spatial
 
 import org.alitouka.spark.dbscan.spatial.rdd.PartitioningSettings
 import org.alitouka.spark.dbscan.DbscanSettings
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.{ListBuffer, ArrayBuffer}
 import org.alitouka.spark.dbscan.util.math.DoubleComparisonOperations._
 import scala.collection.parallel.ParIterable
 import org.alitouka.spark.dbscan.util.debug.Clock
@@ -66,9 +66,9 @@ private [dbscan] class PartitionIndex (val partitionBounds: Box,
 
   private [dbscan] def findPotentiallyClosePoints (pt: Point): Iterable[Point] = {
     val box1 = findBoxForPoint(pt, boxesTree)
-    val result = ArrayBuffer[Point] ()
+    val result = ListBuffer[Point] ()
 
-    result ++= box1.points
+    result ++= box1.points.filter ( p => p.pointId != pt.pointId && Math.abs(p.distanceFromOrigin - pt.distanceFromOrigin) <= dbscanSettings.epsilon )
 
     if (this.isPointCloseToAnyBound(pt, box1.box, dbscanSettings.epsilon)) {
 
@@ -77,13 +77,13 @@ private [dbscan] class PartitionIndex (val partitionBounds: Box,
           val tempBox = Box (pt, largeBox)
 
           if (tempBox.isPointWithin(box2.box.centerPoint)) {
-            result ++= box2.points
+            result ++= box2.points.filter ( p => Math.abs(p.distanceFromOrigin - pt.distanceFromOrigin) <= dbscanSettings.epsilon )
           }
         }
       }
     }
 
-    result.filter ( p => Math.abs(p.distanceFromOrigin - pt.distanceFromOrigin) <= dbscanSettings.epsilon )
+    result //.filter ( p => Math.abs(p.distanceFromOrigin - pt.distanceFromOrigin) <= dbscanSettings.epsilon )
   }
 
 

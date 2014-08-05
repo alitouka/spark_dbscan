@@ -237,5 +237,22 @@ class BoxCalculatorSuite extends SuiteBase {
     assert (distinctAdjacentBoxIds.contains((b2.boxId, b4.boxId)))
     assert (distinctAdjacentBoxIds.contains((b3.boxId, b4.boxId)))
   }
+
+  test ("BoxCalculator should generate embracing box") {
+    val rootBox = new Box((0.0, 1.0), (0.0, 1.0)).withId(10)
+    val boxBelow = new Box ((0.0, 1.0), (-1.0, 0.0)).withId (11)
+    val boxAbove = new Box ((0.0, 1.0), (1.0, 2.0)).withId (12)
+    val boxOnLeft = new Box ((-1.0, 0.0), (0.0, 1.0)).withId (14)
+    val boxOnRight = new Box ((1.0, 2.0), (0.0, 1.0)).withId (9) // Id is less than root box id, so it should not
+                                                                  // be included into the embracing box
+
+    BoxCalculator.assignAdjacentBoxes(rootBox :: boxBelow :: boxAbove :: boxOnLeft :: boxOnRight :: Nil)
+
+    assert (rootBox.adjacentBoxes.size == 4)
+
+    val embracingBox = BoxCalculator.generateEmbracingBoxFromAdjacentBoxes(rootBox)
+    assert (embracingBox.bounds(0).equals(new BoundsInOneDimension(-1.0, 1.0)))
+    assert (embracingBox.bounds(1).equals(new BoundsInOneDimension(-1.0, 2.0)))
+  }
 }
 

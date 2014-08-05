@@ -79,6 +79,11 @@ private [dbscan] class BoundsInOneDimension (val lower: Double, val upper: Doubl
     extend (by.length)
   }
 
+  def increaseToFit (that: BoundsInOneDimension): BoundsInOneDimension = {
+    new BoundsInOneDimension (Math.min (this.lower, that.lower), Math.max (this.upper, that.upper),
+      this.includeHigherBound || that.includeHigherBound)
+  }
+
   override def toString (): String = {
     "[" + lower + " - " + upper + (if (includeHigherBound) "]" else ")")
   }

@@ -20,7 +20,7 @@ object PointsInAdjacentBoxesRDD {
 
         val boxesMap = broadcastBoxes.value.map (x => (x.boxId, x :: x.adjacentBoxes)).toMap
 
-        for (p <- it; b <- boxesMap(p.boxId); if p.boxId <= b.boxId)
+        for (p <- it; b <- boxesMap(p.boxId); if BoxCalculator.shouldAdjacentBoxBeIncludedInPartition(b.boxId, p.boxId))
           yield (b.boxId, p)
       }
     }

@@ -167,4 +167,37 @@ private [dbscan] object BoxCalculator {
       yield (b.boxId, ab.boxId)
 
   }
+
+  private [dbscan] def shouldAdjacentBoxBeIncludedInPartition (rootBoxId: BoxId, adjacentBoxId: BoxId): Boolean = {
+    rootBoxId <= adjacentBoxId
+  }
+
+  private [dbscan] def generateEmbracingBox (boxes: Iterable[Box]): Box = {
+
+    val it = boxes.iterator
+    val firstBox = it.next
+
+    var embracingBoxBounds: Iterable[BoundsInOneDimension] = firstBox.bounds
+
+    it.foreach {
+      b => {
+        assert (embracingBoxBounds.size == b.bounds.size)
+
+        embracingBoxBounds = embracingBoxBounds.zip (b.bounds).map {
+          x => x._1.increaseToFit(x._2)
+        }
+      }
+    }
+
+    new Box(embracingBoxBounds.toArray)
+  }
+
+  private [dbscan] def generateEmbracingBoxFromAdjacentBoxes (rootBox: Box): Box = {
+
+    var rootAndAdjacentBoxes = rootBox :: rootBox.adjacentBoxes.filter {
+      x => BoxCalculator.shouldAdjacentBoxBeIncludedInPartition(rootBox.boxId, x.boxId)
+    }
+
+    BoxCalculator.generateEmbracingBox(rootAndAdjacentBoxes)
+  }
 }
