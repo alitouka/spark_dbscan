@@ -225,9 +225,6 @@ class DistributedDbscan (
       }
     }
 
-    // I hope there will not be too many points and they will fit into memory
-    //val localData = pointsCloseToBoxBounds.collect().sortBy ( _.distanceFromOrigin)
-
     val (mappings, borderPoints) = generateMappings (pointsCloseToBoxBounds, boxes)
 
     val broadcastMappings = partiallyClusteredData.sparkContext.broadcast(mappings)
@@ -307,12 +304,12 @@ class DistributedDbscan (
         for (i <- 1 until pointsInPartition.length) {
           var j = i-1
 
-          while (j >= 0 && pointsInPartition(i).distanceFromOrigin - pointsInPartition(j).distanceFromOrigin <= settings.epsilon) {
+          val pi = pointsInPartition(i)
+          val pj = pointsInPartition(j)
 
-            val pi = pointsInPartition(i)
-            val pj = pointsInPartition(j)
+          while (j >= 0 && pi.distanceFromOrigin - pj.distanceFromOrigin <= settings.epsilon) {
 
-            if (pi.boxId < pj.boxId && pi.clusterId != pj.clusterId && calculateDistance(pi, pj) <= settings.epsilon) {
+            if (pi.boxId != pj.boxId && pi.clusterId != pj.clusterId && calculateDistance(pi, pj) <= settings.epsilon) {
               val enoughCorePoints = if (settings.treatBorderPointsAsNoise) {
                 isCorePoint(pi, settings) && isCorePoint (pj, settings)
               }
@@ -377,13 +374,12 @@ class DistributedDbscan (
           // and create a partition index based on this box
           for (i <- 1 until pointsInPartition.length) {
             var j = i-1
+            val pi = pointsInPartition(i)
+            val pj = pointsInPartition(j)
 
-            while (j >= 0 && pointsInPartition(i).distanceFromOrigin - pointsInPartition(j).distanceFromOrigin <= settings.epsilon) {
+            while (j >= 0 && pi.distanceFromOrigin - pj.distanceFromOrigin <= settings.epsilon) {
 
-              val pi = pointsInPartition(i)
-              val pj = pointsInPartition(j)
-
-              if (pi.boxId < pj.boxId && pi.clusterId != pj.clusterId && calculateDistance(pi, pj) <= settings.epsilon) {
+              if (pi.boxId != pj.boxId && pi.clusterId != pj.clusterId && calculateDistance(pi, pj) <= settings.epsilon) {
                 val enoughCorePoints = isCorePoint(pi, settings) || isCorePoint(pj, settings)
 
                 if (enoughCorePoints) {

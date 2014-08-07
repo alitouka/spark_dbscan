@@ -41,7 +41,7 @@ class FindClosePointsSuite extends SuiteBase {
     PointsPartitionedByBoxesRDD.extractPointIdsAndCoordinates(partitionedData).collect ().foreach ( println )
     println ("----------\n")
 
-    val closePointsWithinBoxes = distanceAnalyzer.findClosePointsWithinEachBox(partitionedData, false)
+    val closePointsWithinBoxes = distanceAnalyzer.countClosePointsWithinEachBox(partitionedData)
     println ("Pairs of close points within boxes:")
     closePointsWithinBoxes.collect ().foreach( println )
     println ("----------\n")
@@ -51,7 +51,7 @@ class FindClosePointsSuite extends SuiteBase {
     pointsCloseToBounds.collect ().foreach( println )
     println ("----------\n")
 
-    val closePointsAcrossBoxes = distanceAnalyzer.findClosePointsInDifferentBoxes(pointsCloseToBounds, boundingBox, settings.epsilon, false)
+    val closePointsAcrossBoxes = distanceAnalyzer.countClosePointsInDifferentBoxes(pointsCloseToBounds, partitionedData.boxes, settings.epsilon, true)
     println ("Close points which reside in different boxes:")
     closePointsAcrossBoxes.collect ().foreach( println )
     println ("----------\n")
@@ -65,7 +65,7 @@ class FindClosePointsSuite extends SuiteBase {
 
     val distanceAnalyzer = new DistanceAnalyzer(settings)
 
-    val closePointTuples = distanceAnalyzer.findClosePoints(partitionedAndSortedData, true)
+    val closePointTuples = distanceAnalyzer.countClosePoints(partitionedAndSortedData)
 
     closePointTuples.foreach( println )
 
