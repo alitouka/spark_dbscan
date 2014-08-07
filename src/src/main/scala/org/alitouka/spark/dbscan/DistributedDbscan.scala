@@ -253,7 +253,7 @@ class DistributedDbscan (
 
 
     val pointsInAdjacentBoxes = PointsInAdjacentBoxesRDD (pointsCloseToBoxBounds, boxes)
-    val broadcastBoxes = pointsCloseToBoxBounds.sparkContext.broadcast(boxes)
+    //val broadcastBoxes = pointsCloseToBoxBounds.sparkContext.broadcast(boxes)
 
 
     val pairwiseMappings: RDD[(ClusterId, ClusterId)] = pointsInAdjacentBoxes.mapPartitionsWithIndex {
@@ -305,11 +305,13 @@ class DistributedDbscan (
           var j = i-1
 
           val pi = pointsInPartition(i)
-          val pj = pointsInPartition(j)
 
-          while (j >= 0 && pi.distanceFromOrigin - pj.distanceFromOrigin <= settings.epsilon) {
+          while (j >= 0 && pi.distanceFromOrigin - pointsInPartition(j).distanceFromOrigin <= settings.epsilon) {
+
+            val pj = pointsInPartition(j)
 
             if (pi.boxId != pj.boxId && pi.clusterId != pj.clusterId && calculateDistance(pi, pj) <= settings.epsilon) {
+
               val enoughCorePoints = if (settings.treatBorderPointsAsNoise) {
                 isCorePoint(pi, settings) && isCorePoint (pj, settings)
               }
@@ -375,9 +377,11 @@ class DistributedDbscan (
           for (i <- 1 until pointsInPartition.length) {
             var j = i-1
             val pi = pointsInPartition(i)
-            val pj = pointsInPartition(j)
 
-            while (j >= 0 && pi.distanceFromOrigin - pj.distanceFromOrigin <= settings.epsilon) {
+
+            while (j >= 0 && pi.distanceFromOrigin - pointsInPartition(j).distanceFromOrigin <= settings.epsilon) {
+
+              val pj = pointsInPartition(j)
 
               if (pi.boxId != pj.boxId && pi.clusterId != pj.clusterId && calculateDistance(pi, pj) <= settings.epsilon) {
                 val enoughCorePoints = isCorePoint(pi, settings) || isCorePoint(pj, settings)

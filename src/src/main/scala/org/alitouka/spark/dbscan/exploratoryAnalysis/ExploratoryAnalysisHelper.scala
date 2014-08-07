@@ -51,8 +51,8 @@ object ExploratoryAnalysisHelper {
 
     val countsOfPointsWithNeighbors = closePoints
       .map(x => (x._1.pointId, x._2))
-      .reduceByKey(_ + _).map(x  => (x._1, x._2 + 1))
-      .cache() // +1 to include the point itself
+      .foldByKey(1L)( _+_ ) // +1 to include the point itself
+      .cache()
 
     val indexedPoints = PointsPartitionedByBoxesRDD.extractPointIdsAndCoordinates (data)
 
