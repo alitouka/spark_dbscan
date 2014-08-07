@@ -251,56 +251,13 @@ class DistributedDbscan (
   private def generateMappings (pointsCloseToBoxBounds: RDD[Point], boxes: Iterable[Box])
     :(HashSet[(HashSet[ClusterId], ClusterId)], Map [PointId, ClusterId])  = {
 
-
     val pointsInAdjacentBoxes = PointsInAdjacentBoxesRDD (pointsCloseToBoxBounds, boxes)
-    //val broadcastBoxes = pointsCloseToBoxBounds.sparkContext.broadcast(boxes)
-
 
     val pairwiseMappings: RDD[(ClusterId, ClusterId)] = pointsInAdjacentBoxes.mapPartitionsWithIndex {
       (idx, it) => {
         val pointsInPartition = it.map(_._2).toArray.sortBy(_.distanceFromOrigin)
         val pairs = HashSet[(ClusterId, ClusterId)] ()
 
-//        val rootBoxForPartition = broadcastBoxes.value.find (_.partitionId == idx).get
-//        val embracingBox = BoxCalculator.generateEmbracingBoxFromAdjacentBoxes(rootBoxForPartition)
-//        val partitionIndex = new PartitionIndex (embracingBox, settings, partitioningSettings.withNumberOfSplitsWithinPartition(11))
-//
-//        partitionIndex.populate(pointsInPartition)
-//
-//        pointsInPartition.foreach {
-//          pi => {
-//            val closePoints = partitionIndex.findClosePoints(pi)
-//
-//            closePoints.filter ( pj => pi.boxId < pj.boxId && pi.clusterId != pj.clusterId).foreach {
-//              pj => {
-//
-//                val enoughCorePoints = if (settings.treatBorderPointsAsNoise) {
-//                  isCorePoint(pi, settings) && isCorePoint (pj, settings)
-//                }
-//                else {
-//                  isCorePoint (pi, settings) || isCorePoint (pj, settings)
-//                }
-//
-//                if (enoughCorePoints) {
-//                  val (c1, c2) = addBorderPointToCluster(pi, pj, settings)
-//
-//                  if (c1 != c2) {
-//                    if (pi.clusterId < pj.clusterId) {
-//                      pairs += ((pi.clusterId, pj.clusterId))
-//                    }
-//                    else {
-//                      pairs += ((pj.clusterId, pi.clusterId))
-//                    }
-//                  }
-//                }
-//              }
-//            }
-//          }
-//        }
-
-        // TODO: optimize! Use PartitionIndex instead of comparing each point to each other
-        // It will be necessary to generate a bounding box which represents 2 adjacent boxes
-        // and create a partition index based on this box
         for (i <- 1 until pointsInPartition.length) {
           var j = i-1
 
@@ -349,31 +306,6 @@ class DistributedDbscan (
           val pointsInPartition = it.map(_._2).toArray.sortBy(_.distanceFromOrigin)
           val bp = scala.collection.mutable.Map[PointId, ClusterId]()
 
-//          val rootBoxForPartition = broadcastBoxes.value.find (_.partitionId == idx).get
-//          val embracingBox = BoxCalculator.generateEmbracingBoxFromAdjacentBoxes(rootBoxForPartition)
-//          val partitionIndex = new PartitionIndex (embracingBox, settings, partitioningSettings.withNumberOfSplitsWithinPartition(11))
-//
-//          partitionIndex.populate(pointsInPartition)
-//
-//          pointsInPartition.foreach {
-//            pi => {
-//              val closePoints = partitionIndex.findClosePoints(pi)
-//
-//              closePoints.filter (pj => pi.boxId < pj.boxId && pi.clusterId != pj.clusterId).foreach {
-//                pj => {
-//                  val enoughCorePoints = isCorePoint(pi, settings) || isCorePoint(pj, settings)
-//
-//                  if (enoughCorePoints) {
-//                    addBorderPointToCluster(pi, pj, settings, bp)
-//                  }
-//                }
-//              }
-//            }
-//          }
-
-          // TODO: optimize! Use PartitionIndex instead of comparing each point to each other
-          // It will be necessary to generate a bounding box which represents 2 adjacent boxes
-          // and create a partition index based on this box
           for (i <- 1 until pointsInPartition.length) {
             var j = i-1
             val pi = pointsInPartition(i)

@@ -77,14 +77,14 @@ private [dbscan] class DistanceAnalyzer (
     buf.sortWith((x, y) => ordering.lt(x._1, y._1)).iterator
   }
 
-  def countClosePoints ( data: PointsPartitionedByBoxesRDD, countTwice: Boolean = false)
+  def countClosePoints ( data: PointsPartitionedByBoxesRDD)
     :RDD[(PointSortKey, Long)] = {
 
     val closePointsInsideBoxes = countClosePointsWithinEachBox(data)
     val pointsCloseToBoxBounds = findPointsCloseToBoxBounds (data, data.boxes, settings.epsilon)
 
     val closePointsInDifferentBoxes = countClosePointsInDifferentBoxes (pointsCloseToBoxBounds, data.boxes,
-      settings.epsilon, countTwice)
+      settings.epsilon)
 
     closePointsInsideBoxes.union (closePointsInDifferentBoxes)
   }
@@ -118,8 +118,6 @@ private [dbscan] class DistanceAnalyzer (
     it2.foreach {
       currentPoint => {
 
-        //boxIds += currentPoint._2.boxId
-
         val closePointsCount: Long = partitionIndex
           .findClosePoints(currentPoint._2)
           .size
@@ -127,8 +125,6 @@ private [dbscan] class DistanceAnalyzer (
         addPointCount(counts, currentPoint._1, closePointsCount)
       }
     }
-
-    //assert (boxIds.size == 1)
 
     counts.iterator
   }
@@ -146,7 +142,7 @@ private [dbscan] class DistanceAnalyzer (
     })
   }
 
-  def countClosePointsInDifferentBoxes (data: RDD[Point], boxesWithAdjacentBoxes: Iterable[Box], eps: Double, countTwice: Boolean): RDD[(PointSortKey, Long)] = {
+  def countClosePointsInDifferentBoxes (data: RDD[Point], boxesWithAdjacentBoxes: Iterable[Box], eps: Double): RDD[(PointSortKey, Long)] = {
 
     val pointsInAdjacentBoxes: RDD[(PairOfAdjacentBoxIds, Point)] = PointsInAdjacentBoxesRDD (data, boxesWithAdjacentBoxes)
 
@@ -156,34 +152,7 @@ private [dbscan] class DistanceAnalyzer (
 
         val pointsInPartition = it.map (_._2).toArray.sortBy(_.distanceFromOrigin)
         val counts = mutable.HashMap [PointSortKey, Long] ()
-        //val boxIds = mutable.HashSet[BoxId] ()
 
-//        val rootBoxForPartition = broadcastBoxes.value.find (_.partitionId == idx).get
-//        val embracingBox = BoxCalculator.generateEmbracingBoxFromAdjacentBoxes(rootBoxForPartition)
-//        val partitionIndex = new PartitionIndex (embracingBox, settings, partitioningSettings.withNumberOfSplitsWithinPartition(11))
-//
-//        partitionIndex.populate(pointsInPartition)
-//
-//
-//        pointsInPartition.foreach {
-//          p => {
-//            val closePoints = partitionIndex.findClosePoints(p)
-//
-//            closePoints.filter (cp => cp.boxId < p.boxId).foreach {
-//              cp => {
-//                result += ((new PointSortKey(p), new PointSortKey (cp)))
-//
-//                if (returnTwoTuplesForEachPairOfPoints) {
-//                  result += ((new PointSortKey (cp), new PointSortKey (p)))
-//                }
-//              }
-//            }
-//          }
-//        }
-
-        // TODO: optimize! Use PartitionIndex instead of comparing each point to each other
-        // It will be necessary to generate a bounding box which represents 2 adjacent boxes
-        // and create a partition index based on this box
         for (i <- 1 until pointsInPartition.length) {
           var j = i-1
 
@@ -200,17 +169,12 @@ private [dbscan] class DistanceAnalyzer (
 
             if (pi.boxId != pj.boxId && calculateDistance(pi, pj) <= settings.epsilon) {
               addPointCount(counts,piSortKey, 1)
-
-              //if (countTwice) {
-                addPointCount (counts, new PointSortKey (pj), 1)
-              //}
+              addPointCount (counts, new PointSortKey (pj), 1)
             }
 
             j -= 1
           }
         }
-
-        //assert (boxIds.size == 2)
 
         counts.iterator
       }

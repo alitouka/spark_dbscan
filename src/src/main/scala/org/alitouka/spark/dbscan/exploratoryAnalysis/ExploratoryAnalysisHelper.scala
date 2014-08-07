@@ -47,7 +47,7 @@ object ExploratoryAnalysisHelper {
 
     val distanceAnalyzer = new DistanceAnalyzer(settings)
 
-    val closePoints = distanceAnalyzer.countClosePoints(data, true)
+    val closePoints = distanceAnalyzer.countClosePoints(data)
 
     val countsOfPointsWithNeighbors = closePoints
       .map(x => (x._1.pointId, x._2))

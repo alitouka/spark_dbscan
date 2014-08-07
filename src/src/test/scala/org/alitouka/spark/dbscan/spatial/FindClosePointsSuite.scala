@@ -51,7 +51,7 @@ class FindClosePointsSuite extends SuiteBase {
     pointsCloseToBounds.collect ().foreach( println )
     println ("----------\n")
 
-    val closePointsAcrossBoxes = distanceAnalyzer.countClosePointsInDifferentBoxes(pointsCloseToBounds, partitionedData.boxes, settings.epsilon, true)
+    val closePointsAcrossBoxes = distanceAnalyzer.countClosePointsInDifferentBoxes(pointsCloseToBounds, partitionedData.boxes, settings.epsilon)
     println ("Close points which reside in different boxes:")
     closePointsAcrossBoxes.collect ().foreach( println )
     println ("----------\n")

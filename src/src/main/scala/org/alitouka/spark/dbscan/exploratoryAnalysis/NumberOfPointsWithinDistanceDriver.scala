@@ -46,7 +46,7 @@ object NumberOfPointsWithinDistanceDriver {
 
       val partitionedData = PointsPartitionedByBoxesRDD (data, partitioningSettings, settings)
       val distanceAnalyzer = new DistanceAnalyzer(settings)
-      val closePoints = distanceAnalyzer.countClosePoints(partitionedData, true)
+      val closePoints = distanceAnalyzer.countClosePoints(partitionedData)
 
       val countsOfPointsWithNeighbors = closePoints
         .map(x => (x._1.pointId, x._2))
