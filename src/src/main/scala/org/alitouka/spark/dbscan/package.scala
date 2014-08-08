@@ -38,5 +38,8 @@ package object dbscan {
    */
   type ClusterId = Long
 
-  type PairOfAdjacentBoxIds = (BoxId, BoxId)
+  /** A pair of IDs of density-based partitions adjacent to each other
+   *
+   */
+  private [dbscan] type PairOfAdjacentBoxIds = (BoxId, BoxId)
 }
