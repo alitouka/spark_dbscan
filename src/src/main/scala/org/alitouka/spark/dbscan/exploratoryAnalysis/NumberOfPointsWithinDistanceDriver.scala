@@ -30,7 +30,7 @@ object NumberOfPointsWithinDistanceDriver {
 
     if (argsParser.parse(args)) {
       val clock = new Clock ()
-      val distance = argsParser.args.eps // args(2).toDouble
+      val distance = argsParser.args.eps
 
       val sc = new SparkContext(argsParser.args.masterUrl,
         "Histogram of number of points within " + distance + " from each point",
@@ -50,8 +50,7 @@ object NumberOfPointsWithinDistanceDriver {
 
       val countsOfPointsWithNeighbors = closePoints
         .map(x => (x._1.pointId, x._2))
-        .reduceByKey(_ + _)
-        .map(x  => (x._1, x._2 + 1)) // +1 to include the point itself
+        .foldByKey (1L)(_+_)
         .cache()
 
       val indexedPoints = PointsPartitionedByBoxesRDD.extractPointIdsAndCoordinates (partitionedData)
@@ -62,6 +61,7 @@ object NumberOfPointsWithinDistanceDriver {
         .map((_, 0L))
 
       val allCounts = countsOfPointsWithNeighbors union countsOfPointsWithoutNeighbors
+      allCounts.persist()
 
       val histogram = ExploratoryAnalysisHelper.calculateHistogram(
         allCounts,
@@ -70,6 +70,8 @@ object NumberOfPointsWithinDistanceDriver {
       val triples = ExploratoryAnalysisHelper.convertHistogramToTriples(histogram)
 
       IOHelper.saveTriples(sc.parallelize(triples), argsParser.args.outputPath)
+
+      allCounts.unpersist()
 
       clock.logTimeSinceStart("Calculation of number of points within " + distance)
     }
