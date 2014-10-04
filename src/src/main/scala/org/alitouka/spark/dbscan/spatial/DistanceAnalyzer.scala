@@ -36,7 +36,7 @@ private [dbscan] class DistanceAnalyzer (
       .map ( x => (x, 1L))
 
     val allPointCounts = closePointCounts.union (pointsWithoutNeighbors)
-    val partitionedAndSortedCounts = new ShuffledRDD [PointSortKey, Long, (PointSortKey, Long)] (
+    val partitionedAndSortedCounts = new ShuffledRDD [PointSortKey, Long, Long] (
       allPointCounts,
       new BoxPartitioner (data.boxes)
     ).mapPartitions (sortPartition, true)

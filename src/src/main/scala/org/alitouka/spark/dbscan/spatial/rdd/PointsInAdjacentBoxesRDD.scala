@@ -19,7 +19,7 @@ import org.alitouka.spark.dbscan.PairOfAdjacentBoxIds
  * @param adjacentBoxIdPairs A collection of distinct pairs of box IDs
  */
 private [dbscan] class PointsInAdjacentBoxesRDD (prev: RDD[(PairOfAdjacentBoxIds, Point)], val adjacentBoxIdPairs: Array[PairOfAdjacentBoxIds])
-  extends ShuffledRDD [PairOfAdjacentBoxIds, Point, (PairOfAdjacentBoxIds, Point)] (prev, new AdjacentBoxesPartitioner(adjacentBoxIdPairs))
+  extends ShuffledRDD [PairOfAdjacentBoxIds, Point, Point] (prev, new AdjacentBoxesPartitioner(adjacentBoxIdPairs))
 
 private [dbscan] object PointsInAdjacentBoxesRDD {
 
