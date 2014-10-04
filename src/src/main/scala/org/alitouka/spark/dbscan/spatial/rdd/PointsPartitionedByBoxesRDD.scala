@@ -13,7 +13,7 @@ import org.alitouka.spark.dbscan.util.PointIndexer
   * @param boundingBox
   */
 private [dbscan] class PointsPartitionedByBoxesRDD  (prev: RDD[(PointSortKey, Point)], val boxes: Iterable[Box], val boundingBox: Box)
-  extends ShuffledRDD [PointSortKey, Point, (PointSortKey, Point)] (prev, new BoxPartitioner(boxes))
+  extends ShuffledRDD [PointSortKey, Point, Point] (prev, new BoxPartitioner(boxes))
 
 object PointsPartitionedByBoxesRDD {
 
