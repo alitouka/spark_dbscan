@@ -44,7 +44,7 @@ private [dbscan] class BoxCalculator (val data: RawDataSet) {
 
 
   private [dbscan] def getNumberOfDimensions (ds: RawDataSet): Int = {
-    val pt = ds.take(1)(0)
+    val pt = ds.first()
     pt.coordinates.length
   }
 
