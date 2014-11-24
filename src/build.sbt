@@ -2,7 +2,7 @@ name := "spark_dbscan"
 
 organization := "org.alitouka"
 
-version := "0.0.2"
+version := "0.0.4"
 
 libraryDependencies += "org.apache.spark" % "spark-core_2.10" % "1.1.0" % "provided"
 
