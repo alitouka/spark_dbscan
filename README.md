@@ -16,7 +16,7 @@ Learn more about:
 ## Performance
 ![Performance chart](https://github.com/alitouka/spark_dbscan/raw/master/wiki/img/performance_chart_0_0_2.png)
 
-# Credits
+## Credits
  I was glad to receive contributions from other people and I'd like to say thank you:
  * Mark Geraty - for fixing a bug with Java RDDs;
  * [@agrinh](https://github.com/agrinh) - for adding compatibility with Spark 1.1.0
