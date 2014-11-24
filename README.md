@@ -19,7 +19,7 @@ Learn more about:
 # Credits
  I was glad to receive contributions from other people and I'd like to say thank you:
  * Mark Geraty - for fixing a bug with Java RDDs;
- * @agrinh - for adding compatibility with Spark 1.1.0
+ * [@agrinh](https://github.com/agrinh) - for adding compatibility with Spark 1.1.0
 
 ## Contact me
 Any questions, comments, suggestions as well as criticism are welcome! You can contact me via:
