@@ -9,6 +9,7 @@ import org.alitouka.spark.dbscan.util.commandLine._
 import org.alitouka.spark.dbscan.spatial.DistanceAnalyzer
 import org.alitouka.spark.dbscan.spatial.rdd.{PartitioningSettings, PointsPartitionedByBoxesRDD}
 import org.alitouka.spark.dbscan.util.debug.Clock
+import org.alitouka.spark.dbscan.RawDataSet
 
 /** A driver program which calculates number of point's neighbors within specified distance
   * and generates a histogram of distribution of this number across the data set
@@ -43,38 +44,53 @@ object NumberOfPointsWithinDistanceDriver {
         .withDistanceMeasure(argsParser.args.distanceMeasure)
 
       val partitioningSettings = new PartitioningSettings (numberOfPointsInBox = argsParser.args.numberOfPoints)
-
-      val partitionedData = PointsPartitionedByBoxesRDD (data, partitioningSettings, settings)
-      val distanceAnalyzer = new DistanceAnalyzer(settings)
-      val closePoints = distanceAnalyzer.countClosePoints(partitionedData)
-
-      val countsOfPointsWithNeighbors = closePoints
-        .map(x => (x._1.pointId, x._2))
-        .foldByKey (1L)(_+_)
-        .cache()
-
-      val indexedPoints = PointsPartitionedByBoxesRDD.extractPointIdsAndCoordinates (partitionedData)
-
-      val countsOfPointsWithoutNeighbors = indexedPoints
-        .keys
-        .subtract(countsOfPointsWithNeighbors.keys)
-        .map((_, 0L))
-
-      val allCounts = countsOfPointsWithNeighbors union countsOfPointsWithoutNeighbors
-      allCounts.persist()
-
-      val histogram = ExploratoryAnalysisHelper.calculateHistogram(
-        allCounts,
-        argsParser.args.numberOfBuckets)
+      
+      val histogram = createNumberOfPointsWithinDistanceHistogram(data, settings, partitioningSettings, argsParser.args.numberOfBuckets)
 
       val triples = ExploratoryAnalysisHelper.convertHistogramToTriples(histogram)
 
       IOHelper.saveTriples(sc.parallelize(triples), argsParser.args.outputPath)
 
-      allCounts.unpersist()
-
       clock.logTimeSinceStart("Calculation of number of points within " + distance)
     }
+  }
+  
+  /**
+   * This method allows for the histogram to be created and used programmatically.
+   * 
+   * Requires DbscanSettings to be set, because it must include value for epsilon.
+   */
+  def createNumberOfPointsWithinDistanceHistogram(
+    data: RawDataSet,
+    settings: DbscanSettings,
+    partitioningSettings: PartitioningSettings = new PartitioningSettings(),
+    numberOfBuckets: Int = -1) = {
+    
+    val partitionedData = PointsPartitionedByBoxesRDD (data, partitioningSettings, settings)
+    val distanceAnalyzer = new DistanceAnalyzer(settings)
+    val closePoints = distanceAnalyzer.countClosePoints(partitionedData)
+
+    val countsOfPointsWithNeighbors = closePoints
+      .map(x => (x._1.pointId, x._2))
+      .foldByKey (1L)(_+_)
+      .cache()
+
+    val indexedPoints = PointsPartitionedByBoxesRDD.extractPointIdsAndCoordinates (partitionedData)
+
+    val countsOfPointsWithoutNeighbors = indexedPoints
+      .keys
+      .subtract(countsOfPointsWithNeighbors.keys)
+      .map((_, 0L))
+    
+    val allCounts = countsOfPointsWithNeighbors union countsOfPointsWithoutNeighbors
+    
+    allCounts.persist()
+    
+    val histogram = if(numberOfBuckets < 1) ExploratoryAnalysisHelper.calculateHistogram(allCounts) else ExploratoryAnalysisHelper.calculateHistogram(allCounts, numberOfBuckets)
+    
+    allCounts.unpersist()
+    
+    histogram
   }
 
 }
