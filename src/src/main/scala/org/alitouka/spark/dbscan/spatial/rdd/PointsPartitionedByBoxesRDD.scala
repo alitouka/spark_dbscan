@@ -32,7 +32,7 @@ object PointsPartitionedByBoxesRDD {
       rawData,
       broadcastBoxes,
       broadcastNumberOfDimensions,
-      DbscanSettings.getDefaultDistanceMeasure)
+      dbscanSettings.distanceMeasure)
 
     PointsPartitionedByBoxesRDD (pointsInBoxes, boxes, boundingBox)
   }
