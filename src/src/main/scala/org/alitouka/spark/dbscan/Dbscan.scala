@@ -7,6 +7,7 @@ import scala.reflect._
 import org.apache.spark.Logging
 import org.alitouka.spark.dbscan.spatial.DistanceAnalyzer
 import org.alitouka.spark.dbscan.spatial.rdd.PartitioningSettings
+import org.alitouka.spark.dbscan.util.debug.Troubleshooting
 
 /** Base class for implementations of the DBSCAN algorithm
   *
@@ -19,7 +20,7 @@ abstract class Dbscan protected (
   protected val settings: DbscanSettings,
   protected val partitioningSettings: PartitioningSettings = new PartitioningSettings ())
   extends Serializable
-  with Logging {
+  with Troubleshooting {
 
   protected val distanceAnalyzer = new DistanceAnalyzer(settings)
 

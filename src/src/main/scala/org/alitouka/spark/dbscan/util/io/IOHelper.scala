@@ -1,15 +1,16 @@
 package org.alitouka.spark.dbscan.util.io
 
-import org.apache.spark.SparkContext
+import org.apache.spark.{Logging, SparkContext}
 import scala.collection.mutable.WrappedArray.ofDouble
 import org.alitouka.spark.dbscan.{DbscanModel, RawDataSet, ClusterId, PointCoordinates}
 import org.apache.spark.rdd.RDD
 import org.alitouka.spark.dbscan.spatial.Point
+import org.alitouka.spark.dbscan.util.debug.{Troubleshooting, Clock}
 
 /** Contains functions for reading and writing data
   *
   */
-object IOHelper {
+object IOHelper extends Troubleshooting {
 
   /** Reads a dataset from a CSV file. That file should contain double values separated by commas
     *
@@ -18,13 +19,24 @@ object IOHelper {
     * @return A [[org.alitouka.spark.dbscan.RawDataSet]] populated with points
     */
   def readDataset (sc: SparkContext, path: String): RawDataSet = {
+
+    logEntry
+    val clock = new Clock ()
+
+    logDebug("Reading raw data from '" + path + "'")
     val rawData = sc.textFile (path)
 
-    rawData.map (
+    logDebug("Creating a point for each line in an input file")
+    val result = rawData.map (
       line => {
         new Point (line.split(separator).map( _.toDouble ))
       }
     )
+
+    clock.logTimeSinceStart("Reading dataset")
+    logExit
+
+    result
   }
 
   /** Saves clustering result into a CSV file. The resulting file will contain the same data as the input file,
@@ -37,10 +49,14 @@ object IOHelper {
     */
   def saveClusteringResult (model: DbscanModel, outputPath: String) {
 
+    logEntry
+
     model.allPoints.map ( pt => {
 
       pt.coordinates.mkString(separator) + separator + pt.clusterId
     } ).saveAsTextFile(outputPath)
+
+    logExit
   }
 
   private [dbscan] def saveTriples (data: RDD[(Double, Double, Long)], outputPath: String) {

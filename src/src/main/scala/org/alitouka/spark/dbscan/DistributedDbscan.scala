@@ -7,7 +7,7 @@ import org.apache.spark.rdd.RDD
 import org.alitouka.spark.dbscan.spatial.rdd.{PointsInAdjacentBoxesRDD, PointsPartitionedByBoxesRDD, PartitioningSettings}
 import scala.Some
 import org.alitouka.spark.dbscan.util.commandLine.CommonArgs
-import org.alitouka.spark.dbscan.util.debug.DebugHelper
+import org.alitouka.spark.dbscan.util.debug.{Troubleshooting, DebugHelper}
 import org.apache.spark.Logging
 import scala.collection.immutable.HashMap
 
@@ -27,7 +27,7 @@ import scala.collection.immutable.HashMap
 class DistributedDbscan (
   settings: DbscanSettings,
   partitioningSettings: PartitioningSettings = new PartitioningSettings ())
-  extends Dbscan (settings, partitioningSettings) with DistanceCalculation with Logging {
+  extends Dbscan (settings, partitioningSettings) with DistanceCalculation with Troubleshooting {
 
   private [dbscan] implicit val distanceMeasure: DistanceMeasure = settings.distanceMeasure
 
@@ -37,6 +37,9 @@ class DistributedDbscan (
    * @return A [[org.alitouka.spark.dbscan.DbscanModel]] object which represents clustering results
    */
   override protected def run(data: RawDataSet): DbscanModel = {
+
+    logEntry
+
     val distanceAnalyzer = new DistanceAnalyzer (settings)
     val partitionedData = PointsPartitionedByBoxesRDD (data, partitioningSettings, settings)
 
@@ -52,9 +55,13 @@ class DistributedDbscan (
       }
     }
 
+    logDebug("Counting neighbors for each point")
     val pointsWithNeighborCounts = distanceAnalyzer.countNeighborsForEachPoint(partitionedData)
+
+    logDebug("Broadcasting boxes")
     val broadcastBoxes = data.sparkContext.broadcast(partitionedData.boxes)
 
+    logDebug("Calculating partial clusters")
     val partiallyClusteredData = pointsWithNeighborCounts.mapPartitionsWithIndex (
       (partitionIndex, it) => {
         val boxes = broadcastBoxes.value
@@ -74,10 +81,15 @@ class DistributedDbscan (
       }
     }
 
+    logDebug("Merging partial clusters")
     val completelyClusteredData = mergeClustersFromDifferentPartitions(partiallyClusteredData,
       partitionedData.boxes)
 
-    new DbscanModel (completelyClusteredData, settings)
+    logDebug("Creating a DbscanModel")
+    val result = new DbscanModel (completelyClusteredData, settings)
+
+    logExit
+    result
   }
 
 
@@ -96,6 +108,8 @@ class DistributedDbscan (
     */
   private [dbscan] def findClustersInOnePartition (it: Iterator[(PointSortKey, Point)],
     boundingBox: Box): Iterator[(PointSortKey, Point)] = {
+
+    logEntry
 
     var tempPointId = 0
     val points = it.map {
@@ -118,7 +132,10 @@ class DistributedDbscan (
       startingPointWithId = findUnvisitedCorePoint(points, settings)
     }
 
-    points.map ( pt => (new PointSortKey(pt._2), pt._2.toImmutablePoint)).iterator
+    val result = points.map ( pt => (new PointSortKey(pt._2), pt._2.toImmutablePoint)).iterator
+
+    logExit
+    result
   }
 
   /** Expands a cluster. In contrast to the function described in http://en.wikipedia.org/wiki/DBSCAN ,
@@ -215,6 +232,8 @@ class DistributedDbscan (
   private def mergeClustersFromDifferentPartitions (partiallyClusteredData: RDD[(PointSortKey, Point)],
     boxes: Iterable[Box]): RDD[Point] = {
 
+    logEntry
+
     val distanceAnalyzer = new DistanceAnalyzer (settings)
     val pointsCloseToBoxBounds = distanceAnalyzer.findPointsCloseToBoxBounds(partiallyClusteredData, boxes,
       settings.epsilon)
@@ -238,7 +257,7 @@ class DistributedDbscan (
       }
     }
 
-    partiallyClusteredData.mapPartitions {
+    val result = partiallyClusteredData.mapPartitions {
       it => {
         val m = broadcastMappings.value
         val bp = broadcastBorderPoints.value
@@ -246,13 +265,21 @@ class DistributedDbscan (
         it.map ( x => reassignClusterId(x._2, m, bp) )
       }
     }
+
+
+    logExit
+    result
   }
 
   private def generateMappings (pointsCloseToBoxBounds: RDD[Point], boxes: Iterable[Box])
     :(HashSet[(HashSet[ClusterId], ClusterId)], Map [PointId, ClusterId])  = {
 
+    logEntry
+
+    logDebug("calculating pointsInAdjacentBoxes")
     val pointsInAdjacentBoxes = PointsInAdjacentBoxesRDD (pointsCloseToBoxBounds, boxes)
 
+    logDebug("Calculating pairwiseMappings")
     val pairwiseMappings: RDD[(ClusterId, ClusterId)] = pointsInAdjacentBoxes.mapPartitionsWithIndex {
       (idx, it) => {
         val pointsInPartition = it.map(_._2).toArray.sortBy(_.distanceFromOrigin)
@@ -300,6 +327,7 @@ class DistributedDbscan (
       }
     }
 
+    logDebug ("Calculating borderPointsToBeAssignedToClusters")
     val borderPointsToBeAssignedToClusters = if (!settings.treatBorderPointsAsNoise) {
       pointsInAdjacentBoxes.mapPartitionsWithIndex {
         (idx, it) => {
@@ -335,6 +363,8 @@ class DistributedDbscan (
       HashMap[PointId, ClusterId] ()
     }
 
+    logDebug("Calculation of borderPointsToBeAssignedToClusters complete")
+
     val mappings = HashSet[HashSet[ClusterId]] ()
     val processedPairs = HashSet[(ClusterId, ClusterId)] ()
 
@@ -346,8 +376,10 @@ class DistributedDbscan (
       }
     }
 
+    logDebug("Calculating finalMappings")
     val finalMappings = mappings.filter(_.size > 0).map ( x => (x, x.head) )
 
+    logExit
     (finalMappings, borderPointsToBeAssignedToClusters)
   }
 
@@ -382,6 +414,8 @@ class DistributedDbscan (
     */
   private [dbscan] def generateMappings (localData: Seq[Point]): (HashSet[(HashSet[ClusterId], ClusterId)],
     scala.collection.mutable.Map [PointId, ClusterId]) = {
+
+    logEntry
 
     val processedPairs = HashSet [(ClusterId, ClusterId)] ()
     val mappings = HashSet[HashSet[ClusterId]] ()
@@ -430,6 +464,7 @@ class DistributedDbscan (
 
     logInfo (s"Number of points: $numPoints ; iterations: $innerLoopIterations")
 
+    logExit
     (finalMappings, borderPointsToBeAssignedToClusters)
   }
 

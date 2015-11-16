@@ -7,6 +7,7 @@ import org.apache.commons.math3.ml.distance.DistanceMeasure
 import org.apache.spark.rdd.RDD
 import org.alitouka.spark.dbscan._
 import scala.Some
+import org.alitouka.spark.dbscan.util.debug.Troubleshooting
 
 private [dbscan] class PointIndexer (val numberOfPartitions: Int, val currentPartition: Int) {
 
@@ -26,7 +27,7 @@ private [dbscan] class PointIndexer (val numberOfPartitions: Int, val currentPar
 
 }
 
-private [dbscan] object PointIndexer {
+private [dbscan] object PointIndexer extends Troubleshooting {
 
   def addMetadataToPoints (
       data: RawDataSet,
@@ -34,10 +35,12 @@ private [dbscan] object PointIndexer {
       dimensions: Broadcast[Int],
       distanceMeasure: DistanceMeasure): RDD[(PointSortKey, Point)] = {
 
+    logEntry
+
     val numPartitions = data.partitions.length
     val origin = new Point (Array.fill (dimensions.value)(0.0))
 
-    data.mapPartitionsWithIndex( (partitionIndex, points) => {
+    val result = data.mapPartitionsWithIndex( (partitionIndex, points) => {
 
       val pointIndexer = new PointIndexer (numPartitions, partitionIndex)
 
@@ -58,5 +61,7 @@ private [dbscan] object PointIndexer {
       })
     })
 
+    logExit
+    result
   }
 }

@@ -6,7 +6,7 @@ import org.alitouka.spark.dbscan.spatial.rdd._
 import org.apache.commons.math3.ml.distance.DistanceMeasure
 import org.alitouka.spark.dbscan._
 import scala.collection.mutable.ListBuffer
-import org.alitouka.spark.dbscan.util.debug.DebugHelper
+import org.alitouka.spark.dbscan.util.debug.{Troubleshooting, DebugHelper}
 import org.apache.spark.Logging
 import scala.collection.mutable
 
@@ -16,7 +16,7 @@ private [dbscan] class DistanceAnalyzer (
   private val partitioningSettings: PartitioningSettings = new PartitioningSettings ())
   extends Serializable
   with DistanceCalculation
-  with Logging {
+  with Troubleshooting {
 
 
   implicit val distanceMeasure: DistanceMeasure = settings.distanceMeasure
@@ -26,16 +26,23 @@ private [dbscan] class DistanceAnalyzer (
   def countNeighborsForEachPoint ( data: PointsPartitionedByBoxesRDD )
       : RDD[(PointSortKey, Point)] = {
 
+    logEntry
+
+    logDebug("Counting close points")
     val closePointCounts: RDD[(PointSortKey, Long)] = countClosePoints (data)
       .foldByKey(1)(_+_)
       .cache ()
 
+    logDebug("Searching for points without neighbors")
     val pointsWithoutNeighbors = data
       .keys
       .subtract(closePointCounts.keys)
       .map ( x => (x, 1L))
 
+    logDebug("Calculating allPointCounts")
     val allPointCounts = closePointCounts.union (pointsWithoutNeighbors)
+
+    logDebug("Calculating partitionedAndSortedCounts")
     val partitionedAndSortedCounts = new ShuffledRDD [PointSortKey, Long, Long] (
       allPointCounts,
       new BoxPartitioner (data.boxes)
@@ -43,6 +50,7 @@ private [dbscan] class DistanceAnalyzer (
 
     val sortedData = data.mapPartitions (sortPartition, true)
 
+    logDebug("Calculating pointsWithCounts")
     val pointsWithCounts = sortedData.zipPartitions(partitionedAndSortedCounts, true) {
       (it1, it2) => {
         it1.zip (it2).map {
@@ -67,18 +75,26 @@ private [dbscan] class DistanceAnalyzer (
       }
     }
 
+    logExit
     pointsWithCounts
   }
 
   private def sortPartition [T] (it: Iterator[(PointSortKey, T)]) : Iterator[(PointSortKey, T)] = {
 
+    logEntry
+
     val ordering = implicitly[Ordering[PointSortKey]]
     val buf = it.toArray
-    buf.sortWith((x, y) => ordering.lt(x._1, y._1)).iterator
+    val result = buf.sortWith((x, y) => ordering.lt(x._1, y._1)).iterator
+
+    logExit
+    result
   }
 
   def countClosePoints ( data: PointsPartitionedByBoxesRDD)
     :RDD[(PointSortKey, Long)] = {
+
+    logEntry
 
     val closePointsInsideBoxes = countClosePointsWithinEachBox(data)
     val pointsCloseToBoxBounds = findPointsCloseToBoxBounds (data, data.boxes, settings.epsilon)
@@ -86,15 +102,19 @@ private [dbscan] class DistanceAnalyzer (
     val closePointsInDifferentBoxes = countClosePointsInDifferentBoxes (pointsCloseToBoxBounds, data.boxes,
       settings.epsilon)
 
-    closePointsInsideBoxes.union (closePointsInDifferentBoxes)
+    val result = closePointsInsideBoxes.union (closePointsInDifferentBoxes)
+
+    logExit
+    result
   }
 
   def countClosePointsWithinEachBox (data: PointsPartitionedByBoxesRDD)
     :RDD[(PointSortKey, Long)] = {
 
+    logEntry
     val broadcastBoxes = data.sparkContext.broadcast(data.boxes)
 
-    data.mapPartitionsWithIndex {
+    val result = data.mapPartitionsWithIndex {
       (partitionIndex, it) => {
 
         val boxes = broadcastBoxes.value
@@ -103,9 +123,14 @@ private [dbscan] class DistanceAnalyzer (
         countClosePointsWithinPartition (it, boundingBox)
       }
     }
+
+    logExit
+    result
   }
 
   def countClosePointsWithinPartition (it: Iterator[(PointSortKey, Point)], boundingBox: Box): Iterator[(PointSortKey, Long)] = {
+
+    logEntry
 
     val (it1, it2) = it.duplicate
     val partitionIndex = new PartitionIndex (boundingBox, settings, partitioningSettings)
@@ -126,28 +151,37 @@ private [dbscan] class DistanceAnalyzer (
       }
     }
 
-    counts.iterator
+    val result = counts.iterator
+
+    logExit
+    result
   }
 
   def findPointsCloseToBoxBounds [U <: RDD[(PointSortKey, Point)]] (data: U, boxes: Iterable[Box], eps: Double)
     :RDD[Point] = {
 
+    logEntry
+
     val broadcastBoxes = data.sparkContext.broadcast(boxes)
 
-    data.mapPartitionsWithIndex( (index, it) => {
+    val result = data.mapPartitionsWithIndex( (index, it) => {
 
       val box = broadcastBoxes.value.find ( _.partitionId == index ).get
 
       it.filter ( x => isPointCloseToAnyBound (x._2, box, eps)).map ( _._2 )
     })
+
+    logExit
+    result
   }
 
   def countClosePointsInDifferentBoxes (data: RDD[Point], boxesWithAdjacentBoxes: Iterable[Box], eps: Double): RDD[(PointSortKey, Long)] = {
 
+    logEntry
     val pointsInAdjacentBoxes: RDD[(PairOfAdjacentBoxIds, Point)] = PointsInAdjacentBoxesRDD (data, boxesWithAdjacentBoxes)
 
 
-    pointsInAdjacentBoxes.mapPartitionsWithIndex {
+    val result = pointsInAdjacentBoxes.mapPartitionsWithIndex {
       (idx, it) => {
 
         val pointsInPartition = it.map (_._2).toArray.sortBy(_.distanceFromOrigin)
@@ -179,6 +213,9 @@ private [dbscan] class DistanceAnalyzer (
         counts.iterator
       }
     }
+
+    logExit
+    result
   }
 
   private [dbscan] def addPointCount (counts: mutable.HashMap[PointSortKey, Long], sortKey: PointSortKey, c: Long) = {

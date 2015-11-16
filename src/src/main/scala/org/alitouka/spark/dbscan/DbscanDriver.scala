@@ -1,15 +1,15 @@
 package org.alitouka.spark.dbscan
 
-import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.{Logging, SparkConf, SparkContext}
 import org.alitouka.spark.dbscan.util.io.IOHelper
 import org.alitouka.spark.dbscan.util.commandLine._
 import org.alitouka.spark.dbscan.spatial.rdd.PartitioningSettings
-import org.alitouka.spark.dbscan.util.debug.{DebugHelper, Clock}
+import org.alitouka.spark.dbscan.util.debug.{Troubleshooting, DebugHelper, Clock}
 
 /** A driver program which runs DBSCAN clustering algorithm
  *
  */
-object DbscanDriver {
+object DbscanDriver extends Troubleshooting {
 
   private [dbscan] class Args (var minPts: Int = DbscanSettings.getDefaultNumberOfPoints,
       var borderPointsAsNoise: Boolean = DbscanSettings.getDefaultTreatmentOfBorderPoints)
@@ -34,6 +34,7 @@ object DbscanDriver {
 
   def main (args: Array[String]): Unit = {
 
+    logEntry
     val argsParser = new ArgsParser ()
 
     if (argsParser.parse (args)) {
@@ -50,10 +51,12 @@ object DbscanDriver {
         conf.set (DebugHelper.DebugOutputPath, argsParser.args.debugOutputPath.get)
       }
 
-
+      logDebug("Creating Spark context")
       val sc = new SparkContext(conf)
 
+      logDebug("Reading raw data from '" + argsParser.args.inputPath + "'")
       val data = IOHelper.readDataset(sc, argsParser.args.inputPath)
+
       val settings = new DbscanSettings ()
         .withEpsilon(argsParser.args.eps)
         .withNumberOfPoints(argsParser.args.minPts)
@@ -62,10 +65,14 @@ object DbscanDriver {
 
       val partitioningSettings = new PartitioningSettings (numberOfPointsInBox = argsParser.args.numberOfPoints)
 
+      logDebug("Running clustering algorithm")
       val clusteringResult = Dbscan.train(data, settings, partitioningSettings)
+
+      logDebug("Saving clustering result to '" + argsParser.args.outputPath + "'")
       IOHelper.saveClusteringResult(clusteringResult, argsParser.args.outputPath)
 
       clock.logTimeSinceStart("Clustering")
+      logExit
     }
   }
 }

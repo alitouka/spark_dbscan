@@ -4,18 +4,22 @@ import org.alitouka.spark.dbscan.{PairOfAdjacentBoxIds, BoxId, DbscanSettings, R
 import org.alitouka.spark.dbscan.spatial.rdd.{BoxPartitioner, PartitioningSettings}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.SparkContext._
+import org.apache.spark.Logging
+import org.alitouka.spark.dbscan.util.debug.Troubleshooting
 
 /** Calculates box-shaped regions for density-based partitioning (see [[org.alitouka.spark.dbscan.spatial.rdd.BoxPartitioner]] )
   * and for fast lookup of point's neighbors (see [[org.alitouka.spark.dbscan.spatial.PartitionIndex]]
   *
   * @param data A raw data set
   */
-private [dbscan] class BoxCalculator (val data: RawDataSet) {
+private [dbscan] class BoxCalculator (val data: RawDataSet) extends Troubleshooting {
 
   val numberOfDimensions: Int = getNumberOfDimensions (data)
 
   def generateDensityBasedBoxes (partitioningSettings: PartitioningSettings = new PartitioningSettings (),
                                  dbscanSettings: DbscanSettings = new DbscanSettings ()): (Iterable[Box], Box) = {
+
+    logEntry
 
     val datasetBounds = calculateBounds(data, numberOfDimensions)
     val rootBox = new Box (datasetBounds.toArray)
@@ -37,7 +41,11 @@ private [dbscan] class BoxCalculator (val data: RawDataSet) {
 
     BoxCalculator.assignAdjacentBoxes (boxesWithEnoughPoints)
 
-    (BoxPartitioner.assignPartitionIdsToBoxes(boxesWithEnoughPoints), rootBox)
+    val result = (BoxPartitioner.assignPartitionIdsToBoxes(boxesWithEnoughPoints), rootBox)
+
+    logExit
+
+    result
   }
 
 
@@ -69,7 +77,7 @@ private [dbscan] class BoxCalculator (val data: RawDataSet) {
   }
 }
 
-private [dbscan] object BoxCalculator {
+private [dbscan] object BoxCalculator extends Troubleshooting {
 
   def generateTreeOfBoxes (root: Box,
                            partitioningSettings: PartitioningSettings,
@@ -82,6 +90,8 @@ private [dbscan] object BoxCalculator {
                            partitioningSettings: PartitioningSettings,
                            dbscanSettings: DbscanSettings,
                            idGenerator: BoxIdGenerator): BoxTreeItemWithNumberOfPoints = {
+
+    logEntry
 
     val result = new BoxTreeItemWithNumberOfPoints(root)
 
@@ -102,6 +112,7 @@ private [dbscan] object BoxCalculator {
       List[BoxTreeItemWithNumberOfPoints] ()
     }
 
+    logExit
     result
   }
 

@@ -3,8 +3,9 @@ package org.alitouka.spark.dbscan.spatial.rdd
 import org.alitouka.spark.dbscan.spatial.{BoxCalculator, PointSortKey, Box, Point}
 import org.apache.spark.rdd.{ShuffledRDD, RDD}
 import org.alitouka.spark.dbscan._
-import org.apache.spark.SparkContext
+import org.apache.spark.{Logging, SparkContext}
 import org.alitouka.spark.dbscan.util.PointIndexer
+import org.alitouka.spark.dbscan.util.debug.Troubleshooting
 
 /** Density-based partitioned RDD where each point is accompanied by its sort key
   *
@@ -15,26 +16,36 @@ import org.alitouka.spark.dbscan.util.PointIndexer
 private [dbscan] class PointsPartitionedByBoxesRDD  (prev: RDD[(PointSortKey, Point)], val boxes: Iterable[Box], val boundingBox: Box)
   extends ShuffledRDD [PointSortKey, Point, Point] (prev, new BoxPartitioner(boxes))
 
-object PointsPartitionedByBoxesRDD {
+object PointsPartitionedByBoxesRDD extends Troubleshooting {
 
   def apply (rawData: RawDataSet,
     partitioningSettings: PartitioningSettings = new PartitioningSettings (),
     dbscanSettings: DbscanSettings = new DbscanSettings ())
     : PointsPartitionedByBoxesRDD = {
 
+    logEntry
+
     val sc = rawData.sparkContext
-    val boxCalculator = new BoxCalculator (rawData)
+    val boxCalculator = new BoxCalculator(rawData)
+
+    logDebug("Calculating density-based partitions")
     val (boxes, boundingBox) = boxCalculator.generateDensityBasedBoxes (partitioningSettings, dbscanSettings)
+
+    logDebug("Broadcasting coordinates of density-based partitions")
     val broadcastBoxes = sc.broadcast(boxes)
     var broadcastNumberOfDimensions = sc.broadcast (boxCalculator.numberOfDimensions)
 
+    logDebug("Adding metadata to points")
     val pointsInBoxes = PointIndexer.addMetadataToPoints(
       rawData,
       broadcastBoxes,
       broadcastNumberOfDimensions,
       DbscanSettings.getDefaultDistanceMeasure)
 
-    PointsPartitionedByBoxesRDD (pointsInBoxes, boxes, boundingBox)
+    val result = PointsPartitionedByBoxesRDD (pointsInBoxes, boxes, boundingBox)
+
+    logExit
+    result
   }
 
   def apply (pointsInBoxes: RDD[(PointSortKey, Point)], boxes: Iterable[Box], boundingBox: Box): PointsPartitionedByBoxesRDD = {
