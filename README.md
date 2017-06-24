@@ -20,9 +20,3 @@ Learn more about:
  I was glad to receive contributions from other people and I'd like to say thank you:
  * Mark Geraty - for fixing a bug with Java RDDs;
  * [@agrinh](https://github.com/agrinh) - for adding compatibility with Spark 1.1.0
-
-## Contact me
-Any questions, comments, suggestions as well as criticism are welcome! You can contact me via:
-
- * Email: spark.dbscan@gmail.com
- * LinkedIn: https://www.linkedin.com/pub/aliaksei-litouka/59/95a/957
