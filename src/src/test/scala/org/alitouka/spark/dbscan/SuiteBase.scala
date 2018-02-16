@@ -1,7 +1,8 @@
 package org.alitouka.spark.dbscan
 
 import org.scalatest.{FunSuite, BeforeAndAfterEach, Matchers, FlatSpec}
-import org.apache.spark.{SparkContext, Logging}
+import org.apache.spark.SparkContext
+import org.apache.spark.internal.Logging
 import org.alitouka.spark.dbscan.spatial.{PointSortKey, Point}
 
 class SuiteBase extends FunSuite with Matchers with BeforeAndAfterEach with Logging {

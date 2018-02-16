@@ -8,7 +8,7 @@ import org.alitouka.spark.dbscan.spatial.rdd.{PointsInAdjacentBoxesRDD, PointsPa
 import scala.Some
 import org.alitouka.spark.dbscan.util.commandLine.CommonArgs
 import org.alitouka.spark.dbscan.util.debug.DebugHelper
-import org.apache.spark.Logging
+import org.apache.spark.internal.Logging
 import scala.collection.immutable.HashMap
 
 /** Implementation of the DBSCAN algorithm which is capable of parallel processing of the input data.
