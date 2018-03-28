@@ -7,7 +7,7 @@ import org.apache.commons.math3.ml.distance.DistanceMeasure
 import org.alitouka.spark.dbscan._
 import scala.collection.mutable.ListBuffer
 import org.alitouka.spark.dbscan.util.debug.DebugHelper
-import org.apache.spark.Logging
+import org.apache.spark.internal.Logging
 import scala.collection.mutable
 
 

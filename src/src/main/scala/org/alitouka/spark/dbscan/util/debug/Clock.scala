@@ -1,6 +1,6 @@
 package org.alitouka.spark.dbscan.util.debug
 
-import org.apache.spark.Logging
+import org.apache.spark.internal.Logging
 
 private [dbscan] class Clock extends Logging {
   val startTime = System.currentTimeMillis()

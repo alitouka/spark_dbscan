@@ -4,7 +4,7 @@ import org.apache.spark.SparkContext._
 import org.apache.spark.rdd.RDD
 import org.apache.commons.math3.ml.distance.{EuclideanDistance, DistanceMeasure}
 import scala.reflect._
-import org.apache.spark.Logging
+import org.apache.spark.internal.Logging
 import org.alitouka.spark.dbscan.spatial.DistanceAnalyzer
 import org.alitouka.spark.dbscan.spatial.rdd.PartitioningSettings
 
